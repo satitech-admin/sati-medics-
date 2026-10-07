@@ -1,1 +1,14 @@
-{"name":"Sati Medics","short_name":"Sati Medics","start_url":"./","display":"standalone","background_color":"#f6faf8","theme_color":"#087a52","description":"Medicine delivery, consultations and healthcare services.","icons":[]}
+{
+  "name":"Sati Medics",
+  "short_name":"Sati Medics",
+  "description":"Medicine delivery, doctor consultations, diagnostics and family healthcare.",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"portrait-primary",
+  "background_color":"#f5faf8",
+  "theme_color":"#087a52",
+  "icons":[
+    {"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
