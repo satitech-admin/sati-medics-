@@ -4,28 +4,56 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#087a52" />
-  <meta name="description" content="Sati Medics — medicines, doctor consultations and healthcare services." />
+  <meta name="description" content="Sati Medics — medicine delivery, doctor consultations, diagnostics and family healthcare in one platform." />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
-  <title>Sati Medics</title>
+  <title>Sati Medics | Medicines, Doctors & Diagnostics</title>
 </head>
 <body>
+  <div class="announcement">
+    <span><strong>Sati Medics</strong> • Multi-city healthcare access</span>
+    <button data-nav="cities">Check service areas</button>
+  </div>
+
   <div class="app-shell">
     <header class="topbar">
       <button class="brand" data-nav="home" aria-label="Sati Medics home">
-        <span class="brand-mark">✚</span>
-        <span><strong>Sati Medics</strong><small>Your Health, Our Priority</small></span>
+        <img src="assets/sati-medics-logo.svg" alt="Sati Medics" />
       </button>
-      <div class="location-pill">
-        <span>📍</span>
+
+      <nav class="desktop-nav" aria-label="Desktop navigation">
+        <button data-nav="medicines">Medicines</button>
+        <button data-nav="consult">Doctors</button>
+        <button data-nav="labs">Lab Tests</button>
+        <button data-nav="prescription">Prescription</button>
+        <button data-nav="health">Health Programs</button>
+      </nav>
+
+      <div class="location-pill" title="Select service city">
+        <span class="pin-dot"></span>
         <select id="citySelect" aria-label="Select city">
-          <option>Betul</option><option>Bhopal</option><option>Indore</option><option>Nagpur</option>
-          <option>Itarsi</option><option>Harda</option><option>Narmadapuram</option>
+          <option>Betul</option>
+          <option>Bhopal</option>
+          <option>Indore</option>
+          <option>Nagpur</option>
+          <option>Itarsi</option>
+          <option>Harda</option>
+          <option>Narmadapuram</option>
         </select>
       </div>
+
       <div class="header-actions">
-        <button class="icon-btn" id="notificationBtn" aria-label="Notifications">🔔</button>
-        <button class="icon-btn cart-button" data-nav="cart" aria-label="Cart">🛒<span id="cartCount">0</span></button>
+        <button class="icon-btn" id="installBtn" aria-label="Install Sati Medics" title="Install app">
+          <span>↓</span>
+        </button>
+        <button class="icon-btn" id="notificationBtn" aria-label="Notifications" title="Notifications">
+          <span>◉</span>
+        </button>
+        <button class="icon-btn cart-button" data-nav="cart" aria-label="Cart" title="Cart">
+          <span>▣</span><b id="cartCount">0</b>
+        </button>
       </div>
     </header>
 
@@ -33,71 +61,249 @@
 
     <nav class="bottom-nav" aria-label="Primary">
       <button class="nav-item active" data-nav="home"><span>⌂</span><small>Home</small></button>
-      <button class="nav-item" data-nav="medicines"><span>💊</span><small>Medicines</small></button>
-      <button class="nav-item" data-nav="consult"><span>🩺</span><small>Consult</small></button>
-      <button class="nav-item" data-nav="orders"><span>📦</span><small>Orders</small></button>
-      <button class="nav-item" data-nav="profile"><span>👤</span><small>Profile</small></button>
+      <button class="nav-item" data-nav="medicines"><span>✚</span><small>Medicines</small></button>
+      <button class="nav-item" data-nav="consult"><span>◌</span><small>Consult</small></button>
+      <button class="nav-item" data-nav="orders"><span>□</span><small>Orders</small></button>
+      <button class="nav-item" data-nav="profile"><span>○</span><small>Profile</small></button>
     </nav>
   </div>
 
-  <div class="toast" id="toast" role="status"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal-card" id="modalCard" role="dialog" aria-modal="true"></div>
+  </div>
 
   <template id="homeTemplate">
     <section class="page home-page">
-      <div class="hero">
+      <section class="hero">
         <div class="hero-copy">
-          <span class="eyebrow">HEALTHCARE AT YOUR DOORSTEP</span>
-          <h1>Medicines, expert doctors & care — all in one app.</h1>
-          <p>Same-day local medicine delivery, verified consultation and smarter family healthcare.</p>
+          <div class="hero-kicker"><span class="live-dot"></span> HEALTHCARE, MADE LOCAL & SIMPLE</div>
+          <h1>Your medicines, doctors and health services in <em>one trusted app.</em></h1>
+          <p>Order medicines for same-day local delivery, consult doctors by specialty, book diagnostic tests and manage family health — from one secure experience.</p>
           <div class="hero-actions">
-            <button class="primary-btn" data-nav="medicines">Order medicines</button>
+            <button class="primary-btn" data-nav="medicines">Order medicines <span>→</span></button>
             <button class="secondary-btn" data-nav="consult">Consult a doctor</button>
           </div>
-          <div class="trust-row"><span>✓ Licensed pharmacy network</span><span>✓ Secure prescriptions</span><span>✓ Local delivery</span></div>
+          <div class="trust-row">
+            <span><i>✓</i> Prescription-aware ordering</span>
+            <span><i>✓</i> Multi-city fulfilment model</span>
+            <span><i>✓</i> Family health records</span>
+          </div>
         </div>
-        <div class="doctor-card">
-          <div class="doctor-visual">🧑‍⚕️</div>
-          <div><strong>24/7 Care Access</strong><small>General physician • Specialists • Follow-ups</small></div>
+
+        <div class="hero-visual" aria-label="Sati Medics app preview">
+          <div class="phone-shell">
+            <div class="phone-top"><span>9:41</span><strong>Sati Medics</strong><span>•••</span></div>
+            <div class="phone-greeting">
+              <small>Good health starts here</small>
+              <strong>How can we help today?</strong>
+            </div>
+            <div class="phone-search">Search medicines, doctors, tests…</div>
+            <div class="phone-grid">
+              <div><span>Rx</span><b>Medicines</b><small>Same-day</small></div>
+              <div><span>Dr</span><b>Consult</b><small>Video / chat</small></div>
+              <div><span>Lab</span><b>Tests</b><small>At home</small></div>
+              <div><span>+</span><b>Health</b><small>Programs</small></div>
+            </div>
+            <div class="delivery-mini">
+              <div class="delivery-icon">↗</div>
+              <div><small>Order status</small><strong>Out for delivery</strong></div>
+              <b>18 min</b>
+            </div>
+          </div>
+          <div class="floating-card fc-one"><span>24/7</span><div><b>Care Access</b><small>Consult when needed</small></div></div>
+          <div class="floating-card fc-two"><span>✓</span><div><b>Secure</b><small>Health-first workflow</small></div></div>
         </div>
-      </div>
+      </section>
 
       <div class="search-wrap">
-        <input id="globalSearch" type="search" placeholder="Search medicines, symptoms, doctors or tests..." />
+        <div class="search-icon">⌕</div>
+        <input id="globalSearch" type="search" placeholder="Search medicines, doctors, specialties or tests..." autocomplete="off" />
         <button class="search-btn" id="globalSearchBtn">Search</button>
       </div>
 
-      <div class="quick-grid">
-        <button class="quick-card mint" data-nav="medicines"><span>💊</span><strong>Medicines</strong><small>Same-day delivery</small></button>
-        <button class="quick-card blue" data-nav="consult"><span>🩺</span><strong>Doctor Consult</strong><small>Chat, audio & video</small></button>
-        <button class="quick-card lilac" data-nav="labs"><span>🧪</span><strong>Lab Tests</strong><small>Home sample collection</small></button>
-        <button class="quick-card peach" data-nav="prescription"><span>📄</span><strong>Prescription</strong><small>Upload & order</small></button>
-      </div>
+      <section class="quick-grid" aria-label="Main healthcare services">
+        <button class="quick-card mint" data-nav="medicines">
+          <span class="service-icon">Rx</span><strong>Medicines</strong><small>Search, prescription & same-day delivery</small><b>Order now →</b>
+        </button>
+        <button class="quick-card blue" data-nav="consult">
+          <span class="service-icon">Dr</span><strong>Doctor Consultation</strong><small>General + specialist care by chat, audio or video</small><b>Find doctor →</b>
+        </button>
+        <button class="quick-card lilac" data-nav="labs">
+          <span class="service-icon">Lab</span><strong>Diagnostics</strong><small>Book health tests with home sample collection</small><b>Book test →</b>
+        </button>
+        <button class="quick-card peach" data-nav="prescription">
+          <span class="service-icon">Rx+</span><strong>Upload Prescription</strong><small>Send a prescription for pharmacist review</small><b>Upload now →</b>
+        </button>
+      </section>
 
-      <section class="section-block">
-        <div class="section-title"><div><span class="eyebrow">CONSULT BY SPECIALTY</span><h2>Care for every health need</h2></div><button data-nav="consult">View all</button></div>
+      <section class="section-block specialty-section">
+        <div class="section-title">
+          <div><span class="eyebrow">CONSULT BY SPECIALTY</span><h2>Right care, without the guesswork</h2><p>Start with a general physician or choose the specialty relevant to your concern.</p></div>
+          <button data-nav="consult">View all doctors →</button>
+        </div>
         <div class="specialty-row">
-          <button data-specialty="General Physician">🩺<span>General</span></button>
-          <button data-specialty="Pediatrician">👶<span>Child Care</span></button>
-          <button data-specialty="Gynecologist">🌸<span>Women</span></button>
-          <button data-specialty="Dermatologist">✨<span>Skin</span></button>
-          <button data-specialty="Orthopedic">🦴<span>Ortho</span></button>
-          <button data-specialty="Mental Wellness">🧠<span>Wellness</span></button>
+          <button data-specialty="General Physician"><span class="specialty-icon">GP</span><b>General Physician</b><small>Fever, infections, general health</small></button>
+          <button data-specialty="Pediatrician"><span class="specialty-icon">PD</span><b>Pediatrics</b><small>Children & adolescent care</small></button>
+          <button data-specialty="Gynecologist"><span class="specialty-icon">GY</span><b>Women's Health</b><small>Gynecology & wellness</small></button>
+          <button data-specialty="Dermatologist"><span class="specialty-icon">SK</span><b>Skin & Hair</b><small>Dermatology consultation</small></button>
+          <button data-specialty="Orthopedic"><span class="specialty-icon">OR</span><b>Orthopedic</b><small>Bones, joints & mobility</small></button>
+          <button data-specialty="Mental Wellness"><span class="specialty-icon">MW</span><b>Mental Wellness</b><small>Confidential professional support</small></button>
         </div>
       </section>
 
-      <section class="promo-grid">
-        <article class="promo medicine-promo"><span>FAST DELIVERY</span><h3>Need medicines today?</h3><p>Order from verified local pharmacy partners in your service area.</p><button data-nav="medicines">Shop medicines →</button></article>
-        <article class="promo consult-promo"><span>DOCTOR ONLINE</span><h3>Not sure whom to consult?</h3><p>Choose a specialty or start with a general physician.</p><button data-nav="consult">Find doctor →</button></article>
+      <section class="split-showcase">
+        <article class="delivery-showcase">
+          <span class="eyebrow light">SAME-DAY MEDICINE DELIVERY</span>
+          <h2>From a verified local pharmacy network to your doorstep.</h2>
+          <p>The Sati Medics model is built around city-level pharmacy fulfilment so eligible orders can be served locally instead of shipping every order from one central warehouse.</p>
+          <ul>
+            <li><span>01</span> Select your city and medicines</li>
+            <li><span>02</span> Upload prescription when required</li>
+            <li><span>03</span> Pharmacist verifies eligible Rx items</li>
+            <li><span>04</span> Local order is packed and dispatched</li>
+          </ul>
+          <button class="light-btn" data-nav="medicines">Start an order</button>
+        </article>
+
+        <article class="city-showcase">
+          <span class="eyebrow">REGIONAL SERVICE MODEL</span>
+          <h2>Built to grow city by city.</h2>
+          <p>Launch coverage can be activated according to operational pharmacy, doctor and diagnostics availability in each market.</p>
+          <div class="city-pills">
+            <button data-city="Betul">Betul <small>Core</small></button>
+            <button data-city="Itarsi">Itarsi</button>
+            <button data-city="Harda">Harda</button>
+            <button data-city="Narmadapuram">Narmadapuram</button>
+            <button data-city="Bhopal">Bhopal</button>
+            <button data-city="Nagpur">Nagpur</button>
+            <button data-city="Indore">Indore</button>
+          </div>
+          <button class="text-btn" data-nav="cities">See rollout model →</button>
+        </article>
       </section>
 
       <section class="section-block">
-        <div class="section-title"><div><span class="eyebrow">HEALTH PROGRAMS</span><h2>Designed around real families</h2></div></div>
-        <div class="program-grid">
-          <article><span>❤️</span><div><strong>Diabetes Care</strong><small>Medicines, tests, diet & consultation</small></div></article>
-          <article><span>🫀</span><div><strong>Heart Health</strong><small>BP care, refills & specialist support</small></div></article>
-          <article><span>👵</span><div><strong>Senior Care</strong><small>Family profiles and recurring refills</small></div></article>
+        <div class="section-title">
+          <div><span class="eyebrow">HEALTH PROGRAMS</span><h2>Ongoing care, not just one-time orders</h2><p>Organize recurring medicines, tests and consultations around common long-term health needs.</p></div>
+          <button data-nav="health">Explore programs →</button>
+        </div>
+        <div class="program-grid four">
+          <article><span class="program-icon">DB</span><div><strong>Diabetes Care</strong><small>Medicine refills, HbA1c reminders, diet & doctor support</small></div></article>
+          <article><span class="program-icon">HT</span><div><strong>Heart & BP Care</strong><small>BP medicines, lipid tests and follow-up support</small></div></article>
+          <article><span class="program-icon">SC</span><div><strong>Senior Care</strong><small>Family profiles, refill tracking and convenient home care</small></div></article>
+          <article><span class="program-icon">WC</span><div><strong>Women's Care</strong><small>Consultations, diagnostics and wellness support</small></div></article>
         </div>
       </section>
+
+      <section class="how-section">
+        <div class="section-title centered">
+          <div><span class="eyebrow">HOW SATI MEDICS WORKS</span><h2>Healthcare in four clear steps</h2><p>Designed to keep discovery, clinical review and fulfilment easy to understand.</p></div>
+        </div>
+        <div class="steps-grid">
+          <article><span>1</span><h3>Choose a service</h3><p>Medicine, consultation, diagnostic test or health program.</p></article>
+          <article><span>2</span><h3>Share required details</h3><p>Add your location, patient details and prescription when necessary.</p></article>
+          <article><span>3</span><h3>Get verified care</h3><p>Eligible requests move to pharmacist, doctor or diagnostic partner workflows.</p></article>
+          <article><span>4</span><h3>Track everything</h3><p>Follow medicine orders, appointments, reports and reminders from your account.</p></article>
+        </div>
+      </section>
+
+      <section class="care-dashboard">
+        <div class="care-copy">
+          <span class="eyebrow">FAMILY HEALTH HUB</span>
+          <h2>One place for your family's everyday healthcare.</h2>
+          <p>Create family profiles, organize prescriptions, keep lab reports together and set refill reminders for routine medicines.</p>
+          <div class="feature-list">
+            <div><i>✓</i><span><b>Family profiles</b><small>Parents, children and dependents</small></span></div>
+            <div><i>✓</i><span><b>Digital health records</b><small>Prescriptions, reports and order history</small></span></div>
+            <div><i>✓</i><span><b>Refill reminders</b><small>Opt-in reminders for routine medicines</small></span></div>
+            <div><i>✓</i><span><b>Care continuity</b><small>Appointments and test history in one timeline</small></span></div>
+          </div>
+          <button class="primary-btn" data-nav="profile">Open health profile</button>
+        </div>
+        <div class="dashboard-card">
+          <div class="dash-head"><div><small>Family Health</small><strong>Care overview</strong></div><span>•••</span></div>
+          <div class="member-row"><div class="member-avatar">NB</div><div><b>My Profile</b><small>3 active reminders</small></div><button>View</button></div>
+          <div class="metric-grid">
+            <div><small>Next refill</small><strong>12 days</strong><span>Routine medicine</span></div>
+            <div><small>Upcoming</small><strong>1 consult</strong><span>Follow-up appointment</span></div>
+          </div>
+          <div class="record-row"><span>Rx</span><div><b>Prescription</b><small>Saved health document</small></div><i>›</i></div>
+          <div class="record-row"><span>Lab</span><div><b>Lab report</b><small>Recent diagnostic report</small></div><i>›</i></div>
+        </div>
+      </section>
+
+      <section class="section-block preview-section">
+        <div class="section-title">
+          <div><span class="eyebrow">DOCTOR NETWORK</span><h2>Consult across multiple specialties</h2><p>Sample profiles are shown for product preview. Live provider profiles require credential verification before launch.</p></div>
+          <button data-nav="consult">Browse doctors →</button>
+        </div>
+        <div class="doctor-preview-grid">
+          <article><span class="provider-avatar">RS</span><div><b>General Physician</b><small>Primary care & common health concerns</small></div><button data-specialty="General Physician">View</button></article>
+          <article><span class="provider-avatar">NV</span><div><b>Women's Health</b><small>Gynecology and wellness consultations</small></div><button data-specialty="Gynecologist">View</button></article>
+          <article><span class="provider-avatar">AM</span><div><b>Skin & Hair</b><small>Dermatology consultation and follow-up</small></div><button data-specialty="Dermatologist">View</button></article>
+        </div>
+      </section>
+
+      <section class="lab-banner">
+        <div>
+          <span class="eyebrow light">DIAGNOSTICS AT HOME</span>
+          <h2>Book essential health tests without a separate app.</h2>
+          <p>Choose a package, select a convenient collection slot and keep reports linked to your health profile.</p>
+          <button class="light-btn" data-nav="labs">Explore lab tests</button>
+        </div>
+        <div class="lab-stats">
+          <article><strong>Home</strong><small>Sample collection</small></article>
+          <article><strong>Digital</strong><small>Reports in profile</small></article>
+          <article><strong>City-wise</strong><small>Partner availability</small></article>
+        </div>
+      </section>
+
+      <section class="safety-grid">
+        <article><span class="safety-icon">Rx</span><h3>Prescription safeguards</h3><p>Prescription-only items should move through pharmacist review before fulfilment.</p></article>
+        <article><span class="safety-icon">ID</span><h3>Verified providers</h3><p>Doctor and partner credentials should be validated before they are published as live providers.</p></article>
+        <article><span class="safety-icon">🔒</span><h3>Privacy by design</h3><p>Health information should be protected with role-based access, secure storage and clear consent.</p></article>
+        <article><span class="safety-icon">!</span><h3>Emergency clarity</h3><p>Sati Medics is not an emergency response service. In an emergency in India, call 112 or seek immediate local care.</p></article>
+      </section>
+
+      <section class="faq-section">
+        <div class="section-title centered">
+          <div><span class="eyebrow">FREQUENTLY ASKED</span><h2>Know before you use Sati Medics</h2></div>
+        </div>
+        <div class="faq-list">
+          <details><summary>Can every medicine be delivered the same day?</summary><p>No. Same-day availability depends on city coverage, local stock, prescription requirements, pharmacy operating hours and delivery capacity.</p></details>
+          <details><summary>Can I order prescription medicines?</summary><p>You can submit a valid prescription where required. Prescription-only medicine fulfilment must be reviewed by an authorized pharmacy professional before dispatch.</p></details>
+          <details><summary>What types of doctors can I consult?</summary><p>The platform is designed for general physicians and multiple specialties. Actual availability depends on verified doctors onboarded for the selected service area.</p></details>
+          <details><summary>Does Sati Medics replace emergency care?</summary><p>No. It is intended for routine and non-emergency healthcare access. For urgent or life-threatening situations, use local emergency services immediately.</p></details>
+          <details><summary>Where will Sati Medics operate?</summary><p>The planned regional model covers Betul, Itarsi, Harda, Narmadapuram, Bhopal, Nagpur and Indore, activated city-by-city as operational partners are ready.</p></details>
+        </div>
+      </section>
+
+      <section class="download-cta">
+        <div>
+          <span class="eyebrow light">SATI MEDICS</span>
+          <h2>Healthcare that stays with you.</h2>
+          <p>Use the web app today and install it on supported devices for quick access.</p>
+        </div>
+        <div class="download-actions">
+          <button class="light-btn" id="homeInstallBtn">Install Web App</button>
+          <button class="ghost-light-btn" data-nav="profile">Create Health Profile</button>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="footer-main">
+          <div class="footer-brand">
+            <img src="assets/sati-medics-logo.svg" alt="Sati Medics" />
+            <p>A regional healthcare platform for medicine delivery, doctor consultation, diagnostics and family care.</p>
+            <div class="footer-badge">Your Health, Our Priority</div>
+          </div>
+          <div class="footer-col"><strong>Services</strong><button data-nav="medicines">Medicines</button><button data-nav="consult">Doctor Consultation</button><button data-nav="labs">Lab Tests</button><button data-nav="prescription">Prescription Upload</button><button data-nav="health">Health Programs</button></div>
+          <div class="footer-col"><strong>Company</strong><button data-nav="about">About Sati Medics</button><button data-nav="cities">Service Cities</button><button data-nav="support">Help & Support</button><button data-nav="profile">My Account</button></div>
+          <div class="footer-col"><strong>Safety & Legal</strong><button data-nav="privacy">Privacy</button><button data-nav="terms">Terms of Use</button><button data-nav="disclaimer">Medical Disclaimer</button><p class="emergency-note">Emergency in India: <b>112</b></p></div>
+        </div>
+        <div class="footer-bottom"><span>© <span id="footerYear"></span> Sati Medics. All rights reserved.</span><span>Healthcare access • Built for regional scale</span></div>
+      </footer>
     </section>
   </template>
 
