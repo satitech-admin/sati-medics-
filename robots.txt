@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://satitech-admin.github.io/sati-medics-/sitemap.xml
