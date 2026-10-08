@@ -1,4 +1,4 @@
-const CACHE="sati-medics-v3";
+const CACHE="sati-medics-v4";
 const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./assets/sati-medics-logo.svg","./assets/icon.svg"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
