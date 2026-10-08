@@ -124,6 +124,66 @@ function showModal(title,body){
 }
 function closeModal(){ document.getElementById("modalBackdrop").hidden=true; }
 
+function getProfileDefaults(){
+  try{return JSON.parse(localStorage.getItem("satiMedicsProfile")||"{}");}catch{return {};}
+}
+function phone10(value=""){
+  let digits=String(value).replace(/\D/g,"");
+  if(digits.length===12 && digits.startsWith("91")) digits=digits.slice(2);
+  return digits;
+}
+function validMobile(value){ return /^[6-9]\d{9}$/.test(phone10(value)); }
+function validPincode(value){ return /^[1-9]\d{5}$/.test(String(value).replace(/\D/g,"")); }
+function validEmail(value){ return !value || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value); }
+function validName(value){ return String(value).trim().length>=2 && String(value).trim().length<=70; }
+function todayISO(){
+  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10);
+}
+function minDateTimeLocal(minutes=30){
+  const d=new Date(Date.now()+minutes*60000); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16);
+}
+function futureDateTime(value,minutes=20){
+  const t=new Date(value).getTime(); return Number.isFinite(t) && t>=Date.now()+minutes*60000;
+}
+function clearFormErrors(form){
+  if(!form) return;
+  form.querySelectorAll(".input-error").forEach(el=>el.classList.remove("input-error"));
+  form.querySelectorAll(".form-error").forEach(el=>el.remove());
+  const alert=form.querySelector(".form-status"); if(alert){alert.textContent="";alert.className="form-status";}
+}
+function failField(id,message){
+  const el=document.getElementById(id);
+  if(!el){toast(message);return false;}
+  el.classList.add("input-error");
+  const field=el.closest(".field")||el.parentElement;
+  const old=field.querySelector(".form-error"); if(old) old.remove();
+  const err=document.createElement("div"); err.className="form-error"; err.textContent=message; field.appendChild(err);
+  if(document.activeElement!==el) el.focus({preventScroll:true});
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+  return false;
+}
+function formStatus(form,message,type="error"){
+  const box=form.querySelector(".form-status");
+  if(box){box.textContent=message;box.className="form-status "+type;}
+  if(type==="error") toast(message);
+}
+function saveList(key,item){
+  let list=[]; try{list=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(list))list=[];}catch{}
+  list.unshift(item); localStorage.setItem(key,JSON.stringify(list.slice(0,25))); return list;
+}
+function makeId(prefix){ return prefix+Date.now().toString().slice(-7); }
+function setBusy(button,busy,label){
+  if(!button) return;
+  if(busy){button.dataset.label=button.textContent;button.disabled=true;button.textContent=label||"Saving…";}
+  else{button.disabled=false;button.textContent=button.dataset.label||button.textContent;}
+}
+function formatWhen(value){
+  try{return new Date(value).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});}catch{return value;}
+}
+function hasPrescriptionAttachment(){
+  try{return !!JSON.parse(localStorage.getItem("satiMedicsRxMeta")||"null");}catch{return false;}
+}
+
 function renderHome(){
   const tpl=document.getElementById("homeTemplate").content.cloneNode(true);
   view.innerHTML="";
@@ -216,37 +276,55 @@ function renderConsult(specialty=""){
   document.getElementById("docFilter").onchange=draw;
 }
 function renderBooking(doc){
+  const profile=getProfileDefaults();
+  const minSlot=minDateTimeLocal(30);
   view.innerHTML=`<section class="page">
     <button class="outline-btn" onclick="nav('consult')">← Back to doctors</button>
     <div class="consult-panel" style="margin-top:16px">
       <div class="consult-form">
         <span class="eyebrow">BOOK CONSULTATION</span>
         <h2 style="margin:8px 0 5px">${esc(doc.name)}</h2>
-        <p style="margin:0 0 18px;color:var(--muted);font-size:10px">${esc(doc.specialty)} • Sample provider profile</p>
-        <div class="form-grid">
-          <input id="patientName" placeholder="Patient name">
-          <input id="patientAge" type="number" min="0" max="120" placeholder="Age">
-          <select id="mode"><option>Video consultation</option><option>Audio consultation</option><option>Chat consultation</option></select>
-          <input id="slot" type="datetime-local">
-          <textarea id="symptoms" rows="5" placeholder="Briefly describe the health concern (do not use this form for emergencies)"></textarea>
-          <label style="font-size:9px;color:var(--muted);display:flex;gap:8px;align-items:flex-start"><input id="consultConsent" type="checkbox"> I understand this preview booking is not an emergency service and live consultations require verified provider onboarding.</label>
-          <button class="primary-btn" id="confirmConsult">Confirm preview booking • ${money(doc.fee)}</button>
-        </div>
+        <p style="margin:0 0 18px;color:var(--muted);font-size:10px">${esc(doc.specialty)} • Provider profile shown for product preview</p>
+        <form class="smart-form" id="consultForm" novalidate>
+          <div class="form-status" aria-live="polite"></div>
+          <div class="field-grid two">
+            <div class="field"><label for="patientName">Patient full name <span>*</span></label><input id="patientName" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="e.g. Nikhil Baraskar"></div>
+            <div class="field"><label for="consultMobile">Mobile number <span>*</span></label><input id="consultMobile" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div>
+            <div class="field"><label for="patientAge">Age <span>*</span></label><input id="patientAge" type="number" min="1" max="120" inputmode="numeric" placeholder="Age in years"></div>
+            <div class="field"><label for="patientGender">Gender</label><select id="patientGender"><option value="">Prefer not to say</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="field"><label for="mode">Consultation mode <span>*</span></label><select id="mode"><option>Video consultation</option><option>Audio consultation</option><option>Chat consultation</option></select></div>
+            <div class="field"><label for="slot">Preferred slot <span>*</span></label><input id="slot" type="datetime-local" min="${minSlot}"><small>Choose a time at least 30 minutes from now.</small></div>
+          </div>
+          <div class="field"><label for="symptoms">Health concern <span>*</span></label><textarea id="symptoms" rows="5" maxlength="700" placeholder="Describe symptoms, duration and any relevant context. Do not use this form for emergencies."></textarea><small>Minimum 10 characters. Avoid sharing unrelated sensitive information.</small></div>
+          <label class="consent-row"><input id="consultConsent" type="checkbox"><span>I understand Sati Medics is not an emergency service and that a live consultation requires a verified provider.</span></label>
+          <div class="form-actions"><button class="primary-btn" id="confirmConsult" type="submit">Book consultation • ${money(doc.fee)}</button><small>No payment is collected in this preview.</small></div>
+        </form>
       </div>
-      <div class="video-mock"><div class="video-screen"><div><div class="avatar"><img src="${esc(doc.photo)}" alt="${esc(doc.name)}"></div><h2 style="color:white">${esc(doc.name)}</h2><p>Secure consultation-room preview</p><p style="opacity:.72">Production video/audio service requires a compliant real-time communications integration.</p></div></div></div>
+      <div class="video-mock"><div class="video-screen"><div><div class="avatar"><img src="${esc(doc.photo)}" alt="${esc(doc.name)}"></div><h2 style="color:white">${esc(doc.name)}</h2><p>Secure consultation-room preview</p><p style="opacity:.72">Production video/audio service requires compliant real-time communications, identity and consent controls.</p></div></div></div>
     </div>
   </section>`;
-  document.getElementById("confirmConsult").onclick=()=>{
-    const name=document.getElementById("patientName").value.trim();
-    const slot=document.getElementById("slot").value;
-    if(!name||!slot) return toast("Add patient name and consultation slot");
-    if(!document.getElementById("consultConsent").checked) return toast("Please accept the consultation acknowledgement");
-    localStorage.setItem("satiMedicsConsult",JSON.stringify({doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name}));
-    toast("Preview consultation booked");
-    setTimeout(()=>nav("orders"),650);
-  };
-}
 
+  const form=document.getElementById("consultForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault(); clearFormErrors(form);
+    const name=document.getElementById("patientName").value.trim();
+    const mobile=document.getElementById("consultMobile").value.trim();
+    const age=Number(document.getElementById("patientAge").value);
+    const slot=document.getElementById("slot").value;
+    const symptoms=document.getElementById("symptoms").value.trim();
+    if(!validName(name)) return failField("patientName","Enter the patient's full name.");
+    if(!validMobile(mobile)) return failField("consultMobile","Enter a valid 10-digit Indian mobile number.");
+    if(!Number.isInteger(age)||age<1||age>120) return failField("patientAge","Enter a valid age between 1 and 120.");
+    if(!slot||!futureDateTime(slot,25)) return failField("slot","Choose a future slot at least 30 minutes from now.");
+    if(symptoms.length<10) return failField("symptoms","Please describe the health concern in at least 10 characters.");
+    if(!document.getElementById("consultConsent").checked){formStatus(form,"Please accept the consultation acknowledgement.");return;}
+    const btn=document.getElementById("confirmConsult"); setBusy(btn,true,"Booking…");
+    const booking={id:makeId("SC"),doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name,mobile:phone10(mobile),age,gender:document.getElementById("patientGender").value,symptoms,fee:doc.fee,status:"Requested",createdAt:new Date().toISOString()};
+    localStorage.setItem("satiMedicsConsult",JSON.stringify(booking));
+    saveList("satiMedicsConsultations",booking);
+    setTimeout(()=>{setBusy(btn,false);toast("Consultation request saved");nav("orders");},450);
+  });
+}
 function renderLabs(){
   view.innerHTML=`<section class="page">
     <div class="page-header"><div><span class="eyebrow">DIAGNOSTICS</span><h1>Lab tests at home</h1><p>Browse sample diagnostic packages and create a home-collection booking request for ${esc(citySelect.value)}.</p></div></div>
@@ -256,37 +334,89 @@ function renderLabs(){
   document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>renderLabBooking(labs[+b.dataset.lab]));
 }
 function renderLabBooking(lab){
+  const profile=getProfileDefaults();
   view.innerHTML=`<section class="page"><button class="outline-btn" onclick="nav('labs')">← Back to tests</button>
-    <div class="section-block" style="max-width:760px;margin-top:16px"><span class="eyebrow">HOME COLLECTION REQUEST</span><h2 style="margin:8px 0 5px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">${esc(lab.tests)}</p>
-      <div class="form-grid" style="margin-top:18px"><input id="labPatient" placeholder="Patient name"><input id="labPhone" inputmode="tel" placeholder="Mobile number"><input id="labDate" type="date"><textarea id="labAddress" rows="3" placeholder="Collection address in ${esc(citySelect.value)}"></textarea><button class="primary-btn" id="confirmLab">Request collection • ${money(lab.price)}</button></div>
+    <div class="section-block form-card" style="max-width:780px;margin-top:16px">
+      <span class="eyebrow">HOME COLLECTION REQUEST</span><h2 style="margin:8px 0 5px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">${esc(lab.tests)}</p>
+      <form class="smart-form" id="labForm" novalidate>
+        <div class="form-status" aria-live="polite"></div>
+        <div class="field-grid two">
+          <div class="field"><label for="labPatient">Patient full name <span>*</span></label><input id="labPatient" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="Patient name"></div>
+          <div class="field"><label for="labPhone">Mobile number <span>*</span></label><input id="labPhone" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div>
+          <div class="field"><label for="labDate">Collection date <span>*</span></label><input id="labDate" type="date" min="${todayISO()}"></div>
+          <div class="field"><label for="labSlot">Preferred time <span>*</span></label><select id="labSlot"><option value="">Select a slot</option><option>06:00 AM – 08:00 AM</option><option>08:00 AM – 10:00 AM</option><option>10:00 AM – 12:00 PM</option><option>04:00 PM – 06:00 PM</option></select></div>
+          <div class="field"><label for="labPincode">Pincode <span>*</span></label><input id="labPincode" inputmode="numeric" maxlength="6" placeholder="6-digit pincode"></div>
+          <div class="field"><label>Service city</label><input value="${esc(citySelect.value)}" disabled></div>
+        </div>
+        <div class="field"><label for="labAddress">Collection address <span>*</span></label><textarea id="labAddress" rows="3" maxlength="280" placeholder="House/flat, street, area and nearby landmark"></textarea></div>
+        <label class="consent-row"><input id="labConsent" type="checkbox"><span>I understand the collection request is subject to diagnostic-partner availability and final confirmation.</span></label>
+        <div class="form-actions"><button class="primary-btn" id="confirmLab" type="submit">Request collection • ${money(lab.price)}</button><small>Price and report timing are indicative until a live lab partner is connected.</small></div>
+      </form>
     </div></section>`;
-  document.getElementById("confirmLab").onclick=()=>{
-    const patient=document.getElementById("labPatient").value.trim(),date=document.getElementById("labDate").value,address=document.getElementById("labAddress").value.trim();
-    if(!patient||!date||!address) return toast("Fill patient, date and collection address");
-    localStorage.setItem("satiMedicsLab",JSON.stringify({...lab,patient,date,city:citySelect.value}));
-    toast("Lab collection request saved");
-    setTimeout(()=>nav("orders"),650);
-  };
+  const form=document.getElementById("labForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault(); clearFormErrors(form);
+    const patient=document.getElementById("labPatient").value.trim();
+    const phone=document.getElementById("labPhone").value.trim();
+    const date=document.getElementById("labDate").value;
+    const slot=document.getElementById("labSlot").value;
+    const pin=document.getElementById("labPincode").value.trim();
+    const address=document.getElementById("labAddress").value.trim();
+    if(!validName(patient)) return failField("labPatient","Enter the patient's full name.");
+    if(!validMobile(phone)) return failField("labPhone","Enter a valid 10-digit Indian mobile number.");
+    if(!date||date<todayISO()) return failField("labDate","Choose today or a future collection date.");
+    if(!slot) return failField("labSlot","Select a preferred collection time.");
+    if(!validPincode(pin)) return failField("labPincode","Enter a valid 6-digit pincode.");
+    if(address.length<10) return failField("labAddress","Enter a complete collection address.");
+    if(!document.getElementById("labConsent").checked){formStatus(form,"Please accept the collection acknowledgement.");return;}
+    const btn=document.getElementById("confirmLab"); setBusy(btn,true,"Saving request…");
+    const booking={id:makeId("SL"),...lab,patient,mobile:phone10(phone),date,slot,pincode:pin,address,city:citySelect.value,status:"Requested",createdAt:new Date().toISOString()};
+    localStorage.setItem("satiMedicsLab",JSON.stringify(booking)); saveList("satiMedicsLabs",booking);
+    setTimeout(()=>{setBusy(btn,false);toast("Lab collection request saved");nav("orders");},450);
+  });
 }
-
 function renderPrescription(){
+  const profile=getProfileDefaults();
+  const existing=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsRxMeta")||"null");}catch{return null;}})();
   view.innerHTML=`<section class="page">
-    <div class="page-header"><div><span class="eyebrow">PRESCRIPTION ORDER</span><h1>Upload a prescription</h1><p>Submit a clear prescription for review before ordering medicines that legally require one.</p></div></div>
-    <div class="section-block" style="max-width:760px">
-      <div class="info-callout" style="margin-top:0"><b>Prototype notice:</b> The current static preview does not upload health documents to a server. It only validates the UI flow locally. A secure production backend is required before accepting real prescriptions.</div>
-      <div class="form-grid"><input id="rxFile" type="file" accept="image/*,.pdf"><input id="rxPatient" placeholder="Patient name"><textarea id="rxNote" rows="4" placeholder="Optional note for pharmacist"></textarea><label style="font-size:9px;color:var(--muted);display:flex;gap:8px"><input id="rxConsent" type="checkbox"> I understand prescription-only medicines require pharmacist review and may not be fulfilled if the prescription is invalid or unavailable.</label><button class="primary-btn" id="submitRx">Submit preview request</button></div>
+    <div class="page-header"><div><span class="eyebrow">PRESCRIPTION ORDER</span><h1>Upload a prescription</h1><p>Attach a clear prescription for review before fulfilment of medicines that require one.</p></div></div>
+    <div class="section-block form-card" style="max-width:780px">
+      ${existing?`<div class="form-status success">Prescription attached for ${esc(existing.patient||"patient")} • ${esc(existing.name||"file")}</div>`:""}
+      <div class="info-callout" style="margin-top:0"><b>Privacy notice:</b> This GitHub Pages prototype does not upload the file to a healthcare backend. Only filename/type metadata is stored locally for the demo flow.</div>
+      <form class="smart-form" id="rxForm" novalidate>
+        <div class="form-status" aria-live="polite"></div>
+        <div class="field"><label for="rxFile">Prescription image or PDF <span>*</span></label><input id="rxFile" type="file" accept=".pdf,image/jpeg,image/png,image/webp"><small>PDF/JPG/PNG/WEBP, up to 8 MB. Upload a readable, uncropped prescription.</small></div>
+        <div class="field-grid two">
+          <div class="field"><label for="rxPatient">Patient full name <span>*</span></label><input id="rxPatient" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="Patient name"></div>
+          <div class="field"><label for="rxMobile">Mobile number <span>*</span></label><input id="rxMobile" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div>
+          <div class="field"><label for="rxDoctor">Prescribing doctor</label><input id="rxDoctor" maxlength="80" placeholder="Doctor name (optional)"></div>
+          <div class="field"><label for="rxDate">Prescription date</label><input id="rxDate" type="date" max="${todayISO()}"></div>
+        </div>
+        <div class="field"><label for="rxNote">Note for pharmacist</label><textarea id="rxNote" rows="4" maxlength="500" placeholder="Optional note about requested medicines or availability"></textarea></div>
+        <label class="consent-row"><input id="rxConsent" type="checkbox"><span>I understand prescription-only medicines require pharmacist review and may be changed, declined or held if the prescription is unclear, invalid or unavailable.</span></label>
+        <div class="form-actions"><button class="primary-btn" id="submitRx" type="submit">Attach for pharmacist review</button><button class="outline-btn" type="button" data-nav="cart">Back to cart</button></div>
+      </form>
     </div>
   </section>`;
-  document.getElementById("submitRx").onclick=()=>{
+  const form=document.getElementById("rxForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault(); clearFormErrors(form);
     const file=document.getElementById("rxFile").files[0];
     const patient=document.getElementById("rxPatient").value.trim();
-    if(!file||!patient) return toast("Choose a prescription file and patient name");
-    if(!document.getElementById("rxConsent").checked) return toast("Please accept the prescription acknowledgement");
-    localStorage.setItem("satiMedicsRxMeta",JSON.stringify({name:file.name,type:file.type,patient,date:new Date().toISOString()}));
-    toast("Prescription preview request saved");
-  };
+    const mobile=document.getElementById("rxMobile").value.trim();
+    if(!file) return failField("rxFile","Choose a prescription image or PDF.");
+    const allowed=["application/pdf","image/jpeg","image/png","image/webp"];
+    if(file.type && !allowed.includes(file.type)) return failField("rxFile","Use PDF, JPG, PNG or WEBP format.");
+    if(file.size>8*1024*1024) return failField("rxFile","Prescription file must be 8 MB or smaller.");
+    if(!validName(patient)) return failField("rxPatient","Enter the patient's full name.");
+    if(!validMobile(mobile)) return failField("rxMobile","Enter a valid 10-digit Indian mobile number.");
+    if(!document.getElementById("rxConsent").checked){formStatus(form,"Please accept the prescription acknowledgement.");return;}
+    const btn=document.getElementById("submitRx"); setBusy(btn,true,"Attaching…");
+    const meta={id:makeId("RX"),name:file.name,type:file.type||"unknown",size:file.size,patient,mobile:phone10(mobile),doctor:document.getElementById("rxDoctor").value.trim(),prescriptionDate:document.getElementById("rxDate").value,note:document.getElementById("rxNote").value.trim(),date:new Date().toISOString(),status:"Pending pharmacist review"};
+    localStorage.setItem("satiMedicsRxMeta",JSON.stringify(meta)); saveList("satiMedicsPrescriptions",meta);
+    setTimeout(()=>{setBusy(btn,false);formStatus(form,"Prescription attached. Return to cart to continue.","success");toast("Prescription attached for review");},400);
+  });
 }
-
 function renderCart(){
   view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">YOUR CART</span><h1>Medicine cart</h1><p>Review items before entering delivery details.</p></div></div><div id="cartBody"></div></section>`;
   drawCart();
@@ -307,54 +437,117 @@ function drawCart(){
   document.getElementById("checkoutBtn").onclick=renderCheckout;
 }
 function renderCheckout(){
+  const profile=getProfileDefaults();
+  const rxItems=cart.filter(item=>item.rx);
+  const total=cart.reduce((a,b)=>a+b.price*b.qty,0);
+  const rxAttached=hasPrescriptionAttachment();
+  if(!cart.length){nav("cart");return;}
   view.innerHTML=`<section class="page"><button class="outline-btn" onclick="nav('cart')">← Back to cart</button>
-    <div class="section-block" style="max-width:760px;margin-top:16px"><span class="eyebrow">DELIVERY DETAILS</span><h2 style="margin:8px 0 5px">Deliver in ${esc(citySelect.value)}</h2><p style="font-size:10px;color:var(--muted)">This checkout is a functional front-end prototype. Live orders require inventory, payment, pharmacy and rider integrations.</p>
-      <div class="form-grid" style="margin-top:18px"><input id="custName" placeholder="Full name"><input id="phone" inputmode="tel" placeholder="Mobile number"><input id="pincode" inputmode="numeric" placeholder="Pincode"><textarea id="address" rows="4" placeholder="Full delivery address"></textarea><select id="pay"><option>Cash on delivery</option><option>UPI on delivery</option><option>Online payment (gateway integration required)</option></select><label style="font-size:9px;color:var(--muted);display:flex;gap:8px"><input id="orderConsent" type="checkbox"> I agree that prescription medicines, final stock, price and delivery promise are subject to live verification.</label><button class="primary-btn" id="placeOrder">Place preview order</button></div>
+    <div class="checkout-layout" style="margin-top:16px">
+      <div class="section-block form-card" style="margin:0">
+        <span class="eyebrow">DELIVERY DETAILS</span><h2 style="margin:8px 0 5px">Deliver in ${esc(citySelect.value)}</h2><p style="font-size:10px;color:var(--muted)">Enter complete contact and address details so the order can be reviewed correctly.</p>
+        ${rxItems.length&&!rxAttached?`<div class="form-status error">This cart contains ${rxItems.length} prescription medicine(s). Attach a prescription before placing the order. <button type="button" class="text-btn" data-nav="prescription">Upload prescription →</button></div>`:""}
+        ${rxItems.length&&rxAttached?`<div class="form-status success">Prescription attachment found. Rx items will remain subject to pharmacist review.</div>`:""}
+        <form class="smart-form" id="checkoutForm" novalidate>
+          <div class="form-status" aria-live="polite"></div>
+          <div class="field-grid two">
+            <div class="field"><label for="custName">Full name <span>*</span></label><input id="custName" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="Recipient name"></div>
+            <div class="field"><label for="phone">Mobile number <span>*</span></label><input id="phone" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div>
+            <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" value="${esc(profile.email||"")}" placeholder="For invoice/updates (optional)"></div>
+            <div class="field"><label for="pincode">Pincode <span>*</span></label><input id="pincode" inputmode="numeric" autocomplete="postal-code" maxlength="6" placeholder="6-digit pincode"></div>
+            <div class="field"><label for="house">House / flat / building <span>*</span></label><input id="house" autocomplete="address-line1" maxlength="100" placeholder="House no., flat or building"></div>
+            <div class="field"><label for="area">Street / area <span>*</span></label><input id="area" autocomplete="address-line2" maxlength="120" placeholder="Street, colony or area"></div>
+            <div class="field"><label for="landmark">Landmark</label><input id="landmark" maxlength="100" placeholder="Nearby landmark (optional)"></div>
+            <div class="field"><label>City</label><input value="${esc(citySelect.value)}" disabled></div>
+          </div>
+          <div class="field-grid two">
+            <div class="field"><label for="addressType">Address type</label><select id="addressType"><option>Home</option><option>Work</option><option>Other</option></select></div>
+            <div class="field"><label for="pay">Payment preference <span>*</span></label><select id="pay"><option value="cod">Cash on delivery</option><option value="upi">UPI on delivery</option><option value="online">Online payment — gateway required</option></select></div>
+          </div>
+          <div class="field"><label for="deliveryNote">Delivery instructions</label><textarea id="deliveryNote" rows="3" maxlength="250" placeholder="Gate, floor, call-before-delivery, etc. (optional)"></textarea></div>
+          <label class="consent-row"><input id="orderConsent" type="checkbox"><span>I agree that final stock, price, prescription approval and delivery estimate are confirmed only after live pharmacy review.</span></label>
+          <div class="form-actions"><button class="primary-btn" id="placeOrder" type="submit" ${rxItems.length&&!rxAttached?"disabled":""}>Place order request</button><small>No real payment is collected in this preview.</small></div>
+        </form>
+      </div>
+      <aside class="checkout-summary">
+        <span class="eyebrow">ORDER SUMMARY</span><h3>${cart.reduce((a,b)=>a+b.qty,0)} item(s)</h3>
+        <div class="summary-items">${cart.map(item=>`<div class="summary-item"><div><b>${esc(item.name)}</b><small>${item.qty} × ${money(item.price)}</small></div><strong>${money(item.price*item.qty)}</strong></div>`).join("")}</div>
+        <div class="summary-total"><span>Indicative subtotal</span><strong>${money(total)}</strong></div>
+        <small>Final bill can change after live stock, tax, substitution, discount and delivery validation.</small>
+      </aside>
     </div></section>`;
-  document.getElementById("placeOrder").onclick=()=>{
-    const name=document.getElementById("custName").value.trim(),phone=document.getElementById("phone").value.trim(),pin=document.getElementById("pincode").value.trim(),address=document.getElementById("address").value.trim();
-    if(!name||!phone||!pin||!address) return toast("Fill all delivery details");
-    if(!document.getElementById("orderConsent").checked) return toast("Please accept the order acknowledgement");
-    const order={id:"SM"+Date.now().toString().slice(-6),time:new Date().toISOString(),items:cart,status:2,city:citySelect.value,total:cart.reduce((a,b)=>a+b.price*b.qty,0)};
-    localStorage.setItem("satiMedicsOrder",JSON.stringify(order));
-    cart=[]; saveCart(); toast("Preview order placed"); setTimeout(()=>nav("orders"),650);
-  };
+  const form=document.getElementById("checkoutForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault(); clearFormErrors(form);
+    if(rxItems.length&&!hasPrescriptionAttachment()){formStatus(form,"Attach a prescription before placing an Rx order.");return;}
+    const name=document.getElementById("custName").value.trim();
+    const phone=document.getElementById("phone").value.trim();
+    const email=document.getElementById("email").value.trim();
+    const pin=document.getElementById("pincode").value.trim();
+    const house=document.getElementById("house").value.trim();
+    const area=document.getElementById("area").value.trim();
+    if(!validName(name)) return failField("custName","Enter the recipient's full name.");
+    if(!validMobile(phone)) return failField("phone","Enter a valid 10-digit Indian mobile number.");
+    if(!validEmail(email)) return failField("email","Enter a valid email address or leave it blank.");
+    if(!validPincode(pin)) return failField("pincode","Enter a valid 6-digit pincode.");
+    if(house.length<2) return failField("house","Enter house, flat or building details.");
+    if(area.length<3) return failField("area","Enter street, colony or area.");
+    if(!document.getElementById("orderConsent").checked){formStatus(form,"Please accept the order acknowledgement.");return;}
+    const btn=document.getElementById("placeOrder"); setBusy(btn,true,"Placing order…");
+    const hasRx=rxItems.length>0;
+    const order={id:makeId("SM"),time:new Date().toISOString(),items:cart.map(x=>({...x})),status:0,statusText:hasRx?"Awaiting pharmacist review":"Order requested",city:citySelect.value,total,customer:{name,mobile:phone10(phone),email},delivery:{pincode:pin,house,area,landmark:document.getElementById("landmark").value.trim(),type:document.getElementById("addressType").value,note:document.getElementById("deliveryNote").value.trim()},payment:document.getElementById("pay").value,rxRequired:hasRx,rxAttached:hasRx?hasPrescriptionAttachment():false};
+    localStorage.setItem("satiMedicsOrder",JSON.stringify(order)); saveList("satiMedicsOrders",order);
+    cart=[]; saveCart();
+    setTimeout(()=>{setBusy(btn,false);toast("Order request placed");nav("orders");},500);
+  });
 }
-
 function renderOrders(){
-  const order=JSON.parse(localStorage.getItem("satiMedicsOrder")||"null");
-  const consult=JSON.parse(localStorage.getItem("satiMedicsConsult")||"null");
-  const lab=JSON.parse(localStorage.getItem("satiMedicsLab")||"null");
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Orders & appointments</h1><p>Your preview activity stored on this device.</p></div></div>
-  ${order?`<div class="section-block"><div class="section-title"><div><span class="badge">Preview order #${esc(order.id)}</span><h2>Out for delivery</h2><p>Sample order tracking in ${esc(order.city)}</p></div><span class="product-image" style="width:70px;height:70px">GO</span></div><div class="timeline">${["Order confirmed","Packed at pharmacy","Out for delivery","Delivered"].map((s,i)=>`<div class="timeline-step ${i<=order.status?"done":""}"><div class="timeline-dot">${i<=order.status?"✓":i+1}</div><div><strong>${s}</strong><small style="display:block;color:var(--muted);margin-top:4px">${i<=order.status?"Completed in preview":"Pending"}</small></div></div>`).join("")}</div></div>`:'<div class="empty"><h2>No medicine orders yet</h2><p>Place a preview medicine order to see the tracking experience.</p><button class="primary-btn" onclick="nav(\'medicines\')">Order medicines</button></div>'}
-  ${consult?`<div class="section-block"><span class="badge">Consultation</span><h2 style="margin-top:10px">${esc(consult.doctor)}</h2><p style="font-size:10px;color:var(--muted)">${esc(consult.specialty)} • ${new Date(consult.slot).toLocaleString()} • ${esc(consult.mode||"Online")}</p></div>`:""}
-  ${lab?`<div class="section-block"><span class="badge">Lab collection</span><h2 style="margin-top:10px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">Requested for ${esc(lab.date)} • ${esc(lab.city||citySelect.value)}</p></div>`:""}
+  const order=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsOrder")||"null");}catch{return null;}})();
+  const consult=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsConsult")||"null");}catch{return null;}})();
+  const lab=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsLab")||"null");}catch{return null;}})();
+  const orderTitle=order?(order.statusText||"Order requested"):"";
+  const steps=order?.rxRequired?["Order request received","Prescription / pharmacist review","Packed at pharmacy","Out for delivery","Delivered"]:["Order request received","Pharmacy confirmation","Packed at pharmacy","Out for delivery","Delivered"];
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Orders & appointments</h1><p>Your latest preview activity stored on this device.</p></div></div>
+  ${order?`<div class="section-block"><div class="section-title"><div><span class="badge">Order #${esc(order.id)}</span><h2>${esc(orderTitle)}</h2><p>${esc(order.city)} • ${formatWhen(order.time)}</p></div><span class="product-image" style="width:70px;height:70px">RX</span></div><div class="timeline">${steps.map((label,i)=>`<div class="timeline-step ${i<=Number(order.status||0)?"done":""}"><div class="timeline-dot">${i<=Number(order.status||0)?"✓":i+1}</div><div><strong>${label}</strong><small style="display:block;color:var(--muted);margin-top:4px">${i<=Number(order.status||0)?"Recorded":"Pending confirmation"}</small></div></div>`).join("")}</div><div class="summary-total" style="margin-top:10px"><span>Indicative order value</span><strong>${money(order.total||0)}</strong></div></div>`:'<div class="empty"><h2>No medicine orders yet</h2><p>Place a medicine order request to see the tracking flow.</p><button class="primary-btn" onclick="nav(\'medicines\')">Order medicines</button></div>'}
+  ${consult?`<div class="section-block"><span class="badge">Consultation ${esc(consult.id||"")}</span><h2 style="margin-top:10px">${esc(consult.doctor)}</h2><p style="font-size:10px;color:var(--muted)">${esc(consult.patient||"Patient")} • ${esc(consult.specialty)} • ${formatWhen(consult.slot)} • ${esc(consult.mode||"Online")} • ${esc(consult.status||"Requested")}</p></div>`:""}
+  ${lab?`<div class="section-block"><span class="badge">Lab ${esc(lab.id||"")}</span><h2 style="margin-top:10px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">${esc(lab.patient||"Patient")} • ${esc(lab.date)} • ${esc(lab.slot||"")} • ${esc(lab.city||citySelect.value)} • ${esc(lab.status||"Requested")}</p></div>`:""}
   </section>`;
 }
-
 function renderProfile(){
-  const profile=JSON.parse(localStorage.getItem("satiMedicsProfile")||"{}");
-  const reminder=JSON.parse(localStorage.getItem("satiMedicsReminder")||"null");
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACCOUNT</span><h1>My health profile</h1><p>Prototype profile data is stored only in this browser. Do not use this preview to store sensitive real medical records.</p></div></div>
+  const profile=getProfileDefaults();
+  let reminders=[]; try{reminders=JSON.parse(localStorage.getItem("satiMedicsReminders")||"[]");if(!Array.isArray(reminders))reminders=[];}catch{}
+  const nextReminder=reminders[0];
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACCOUNT</span><h1>My health profile</h1><p>Profile data in this prototype is stored only in this browser. Do not use this static preview as a real medical-record vault.</p></div></div>
     <div class="profile-grid">
       <div class="profile-card">
-        <div class="profile-hero"><div class="profile-avatar">${profile.name?esc(profile.name.slice(0,2).toUpperCase()):"SM"}</div><div><h2>${profile.name?esc(profile.name):"Create your profile"}</h2><p style="color:var(--muted);font-size:10px">Family healthcare, reminders and activity in one place.</p></div></div>
-        <div class="form-grid" style="margin-top:20px"><input id="profileName" placeholder="Full name" value="${esc(profile.name||"")}"><input id="profileMobile" inputmode="tel" placeholder="Mobile number" value="${esc(profile.mobile||"")}"><select id="profileLang"><option ${profile.lang==="English"?"selected":""}>English</option><option ${profile.lang==="हिन्दी"?"selected":""}>हिन्दी</option></select><button class="primary-btn" id="saveProfile">Save local profile</button></div>
-        <div class="program-grid" style="margin-top:20px"><article><span class="program-icon">FM</span><div><strong>Family profiles</strong><small>Structure care for parents and children</small></div></article><article><span class="program-icon">HR</span><div><strong>Health records</strong><small>Prescription and report workflow</small></div></article><article><span class="program-icon">RR</span><div><strong>Refill reminders</strong><small>${reminder?esc(reminder.medicine)+" • "+esc(reminder.date):"Set your first reminder"}</small></div></article></div>
+        <div class="profile-hero"><div class="profile-avatar">${profile.name?esc(profile.name.slice(0,2).toUpperCase()):"SM"}</div><div><h2>${profile.name?esc(profile.name):"Create your profile"}</h2><p style="color:var(--muted);font-size:10px">Use basic details to prefill booking and delivery forms.</p></div></div>
+        <form class="smart-form" id="profileForm" novalidate style="margin-top:20px">
+          <div class="form-status" aria-live="polite"></div>
+          <div class="field-grid two">
+            <div class="field"><label for="profileName">Full name <span>*</span></label><input id="profileName" autocomplete="name" maxlength="70" placeholder="Full name" value="${esc(profile.name||"")}"></div>
+            <div class="field"><label for="profileMobile">Mobile number <span>*</span></label><input id="profileMobile" inputmode="tel" autocomplete="tel" maxlength="14" placeholder="10-digit mobile number" value="${esc(profile.mobile||"")}"></div>
+            <div class="field"><label for="profileEmail">Email</label><input id="profileEmail" type="email" autocomplete="email" placeholder="Email (optional)" value="${esc(profile.email||"")}"></div>
+            <div class="field"><label for="profileLang">Preferred language</label><select id="profileLang"><option ${profile.lang==="English"?"selected":""}>English</option><option ${profile.lang==="हिन्दी"?"selected":""}>हिन्दी</option></select></div>
+          </div>
+          <div class="form-actions"><button class="primary-btn" id="saveProfile" type="submit">Save profile</button></div>
+        </form>
+        <div class="program-grid" style="margin-top:20px"><article><span class="program-icon">FM</span><div><strong>Family profiles</strong><small>Structure care for parents and children</small></div></article><article><span class="program-icon">HR</span><div><strong>Health records</strong><small>Prescription and report workflow</small></div></article><article><span class="program-icon">RR</span><div><strong>Refill reminders</strong><small>${nextReminder?esc(nextReminder.medicine)+" • "+esc(nextReminder.date)+" "+esc(nextReminder.time):"Set your first reminder"}</small></div></article></div>
       </div>
       <div class="settings-card"><h2>Quick actions</h2><div class="settings-list"><button id="setReminder">Set medicine reminder</button><button data-nav="orders">Orders & appointments</button><button data-nav="prescription">Prescription upload</button><button data-nav="privacy">Privacy & security</button><button data-nav="support">Help & support</button></div></div>
     </div>
   </section>`;
-  document.getElementById("saveProfile").onclick=()=>{
-    const name=document.getElementById("profileName").value.trim(),mobile=document.getElementById("profileMobile").value.trim(),lang=document.getElementById("profileLang").value;
-    if(!name) return toast("Add your name");
-    localStorage.setItem("satiMedicsProfile",JSON.stringify({name,mobile,lang}));
-    toast("Local profile saved");
-    renderProfile();
-  };
-  document.getElementById("setReminder").onclick=()=>showModal("Medicine reminder",`<div class="form-grid"><input id="remMed" placeholder="Medicine name"><input id="remDate" type="date"><button class="primary-btn" id="saveReminder">Save reminder</button></div>`);
+  const form=document.getElementById("profileForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault();clearFormErrors(form);
+    const name=document.getElementById("profileName").value.trim(),mobile=document.getElementById("profileMobile").value.trim(),email=document.getElementById("profileEmail").value.trim(),lang=document.getElementById("profileLang").value;
+    if(!validName(name)) return failField("profileName","Enter your full name.");
+    if(!validMobile(mobile)) return failField("profileMobile","Enter a valid 10-digit Indian mobile number.");
+    if(!validEmail(email)) return failField("profileEmail","Enter a valid email address or leave it blank.");
+    localStorage.setItem("satiMedicsProfile",JSON.stringify({name,mobile:phone10(mobile),email,lang}));
+    formStatus(form,"Profile saved on this device.","success");toast("Profile saved");
+  });
+  document.getElementById("setReminder").onclick=()=>showModal("Medicine reminder",`<form class="smart-form" id="reminderForm" novalidate><div class="form-status" aria-live="polite"></div><div class="field"><label for="remMed">Medicine name <span>*</span></label><input id="remMed" maxlength="80" placeholder="Medicine name"></div><div class="field-grid two"><div class="field"><label for="remDate">Start date <span>*</span></label><input id="remDate" type="date" min="${todayISO()}"></div><div class="field"><label for="remTime">Reminder time <span>*</span></label><input id="remTime" type="time"></div></div><div class="field"><label for="remFrequency">Frequency</label><select id="remFrequency"><option>Once daily</option><option>Twice daily</option><option>Three times daily</option><option>Weekly</option><option>Custom / as advised</option></select></div><button class="primary-btn" id="saveReminder" type="submit">Save reminder</button></form>`);
 }
-
 function renderHealthPrograms(){
   view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">HEALTH PROGRAMS</span><h1>Care that continues</h1><p>Sati Medics can bring medicine refills, diagnostics, consultations and reminders into disease- and life-stage-focused programs.</p></div></div><div class="health-programs-grid">${healthPrograms.map(p=>`<article class="health-program-card"><span class="program-icon">${esc(p.code)}</span><h3>${esc(p.title)}</h3><p>${esc(p.copy)}</p><ul>${p.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul><button class="secondary-btn" data-nav="consult">Talk to a doctor</button></article>`).join("")}</div><div class="info-callout"><b>Clinical scope:</b> Health programs organize access and follow-up; they do not guarantee treatment outcomes and should not replace individualized medical advice.</div></section>`;
 }
@@ -372,15 +565,31 @@ function renderAbout(){
 }
 
 function renderSupport(){
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">HELP & SUPPORT</span><h1>How can we help?</h1><p>Use the support flow for account, order, appointment or technical questions. Emergency medical situations should go directly to emergency services.</p></div></div><div class="support-grid"><div class="support-card"><h2>Support request</h2><p>This preview saves the request locally only; connect your CRM/helpdesk before launch.</p><div class="form-grid"><select id="supportType"><option>Medicine order</option><option>Doctor consultation</option><option>Lab test</option><option>Account</option><option>Technical issue</option></select><input id="supportName" placeholder="Your name"><textarea id="supportMsg" rows="5" placeholder="Describe the issue"></textarea><button class="primary-btn" id="submitSupport">Submit preview request</button></div></div><div class="support-card"><h2>Need urgent medical help?</h2><p>Sati Medics is not an ambulance or emergency response service. In India, call <b>112</b> or seek immediate care from the nearest appropriate emergency facility.</p><h2 style="margin-top:24px">Common actions</h2><div class="settings-list"><button data-nav="orders">Track an order</button><button data-nav="prescription">Prescription help</button><button data-nav="consult">Doctor consultation</button><button data-nav="labs">Lab booking</button></div></div></div></section>`;
-  document.getElementById("submitSupport").onclick=()=>{
-    const name=document.getElementById("supportName").value.trim(),msg=document.getElementById("supportMsg").value.trim();
-    if(!name||!msg) return toast("Add your name and issue");
-    localStorage.setItem("satiMedicsSupport",JSON.stringify({name,msg,type:document.getElementById("supportType").value,date:new Date().toISOString()}));
-    toast("Preview support request saved");
-  };
+  const profile=getProfileDefaults();
+  const currentOrder=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsOrder")||"null");}catch{return null;}})();
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">HELP & SUPPORT</span><h1>How can we help?</h1><p>Use this form for order, appointment, account or technical support. Medical emergencies should go directly to emergency services.</p></div></div>
+    <div class="support-grid"><div class="support-card"><h2>Support request</h2><p>This preview stores the request locally. Connect a real helpdesk/CRM before launch.</p>
+      <form class="smart-form" id="supportForm" novalidate><div class="form-status" aria-live="polite"></div>
+        <div class="field"><label for="supportType">Issue type <span>*</span></label><select id="supportType"><option>Medicine order</option><option>Doctor consultation</option><option>Lab test</option><option>Prescription</option><option>Account</option><option>Technical issue</option></select></div>
+        <div class="field-grid two"><div class="field"><label for="supportName">Your name <span>*</span></label><input id="supportName" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="Full name"></div><div class="field"><label for="supportMobile">Mobile number <span>*</span></label><input id="supportMobile" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div></div>
+        <div class="field"><label for="supportRef">Order / booking ID</label><input id="supportRef" maxlength="30" value="${esc(currentOrder?.id||"")}" placeholder="Optional reference ID"></div>
+        <div class="field"><label for="supportMsg">Describe the issue <span>*</span></label><textarea id="supportMsg" rows="5" maxlength="1000" placeholder="Tell us what happened and what help you need"></textarea><small>Do not submit emergency symptoms or unnecessary medical records here.</small></div>
+        <div class="form-actions"><button class="primary-btn" id="submitSupport" type="submit">Submit support request</button></div>
+      </form>
+    </div><div class="support-card"><h2>Need urgent medical help?</h2><p>Sati Medics is not an ambulance or emergency response service. In India, call <b>112</b> or seek immediate care from the nearest appropriate emergency facility.</p><h2 style="margin-top:24px">Common actions</h2><div class="settings-list"><button data-nav="orders">Track an order</button><button data-nav="prescription">Prescription help</button><button data-nav="consult">Doctor consultation</button><button data-nav="labs">Lab booking</button></div></div></div>
+  </section>`;
+  const form=document.getElementById("supportForm");
+  form.addEventListener("submit",e=>{
+    e.preventDefault();clearFormErrors(form);
+    const name=document.getElementById("supportName").value.trim(),mobile=document.getElementById("supportMobile").value.trim(),msg=document.getElementById("supportMsg").value.trim();
+    if(!validName(name)) return failField("supportName","Enter your full name.");
+    if(!validMobile(mobile)) return failField("supportMobile","Enter a valid 10-digit Indian mobile number.");
+    if(msg.length<12) return failField("supportMsg","Describe the issue in at least 12 characters.");
+    const ticket={id:makeId("SS"),name,mobile:phone10(mobile),type:document.getElementById("supportType").value,ref:document.getElementById("supportRef").value.trim(),message:msg,date:new Date().toISOString(),status:"Open"};
+    localStorage.setItem("satiMedicsSupport",JSON.stringify(ticket));saveList("satiMedicsSupportTickets",ticket);
+    form.reset();formStatus(form,"Support request saved. Reference: "+ticket.id,"success");toast("Support request saved");
+  });
 }
-
 function renderLegal(type){
   const docs={
     privacy:{title:"Privacy",intro:"How health and account information should be handled in the production Sati Medics platform.",sections:[["Privacy by design","Production systems should collect only information needed to deliver healthcare services, use clear consent, restrict access by role and encrypt sensitive data in transit and at rest."],["Health information","Prescriptions, reports, consultation information and family profile data are sensitive. The current static prototype stores only limited demo state in the user's browser and is not suitable for real medical records."],["Third-party providers","Before launch, privacy disclosures should clearly identify how licensed pharmacies, verified doctors, diagnostic partners, payment providers and communication vendors process information."],["User controls","Production accounts should support secure authentication, consent management, data correction, account access controls and legally required data-rights workflows."]]},
@@ -402,6 +611,12 @@ async function installApp(){
   }
 }
 
+document.addEventListener("submit",e=>{
+  if(e.target&&e.target.id==="reminderForm"){
+    e.preventDefault();
+    const save=document.getElementById("saveReminder"); if(save) save.click();
+  }
+});
 document.addEventListener("click",e=>{
   const navButton=e.target.closest("[data-nav]");
   if(navButton){ e.preventDefault(); nav(navButton.dataset.nav); return; }
@@ -410,10 +625,15 @@ document.addEventListener("click",e=>{
   const city=e.target.closest("[data-city]");
   if(city){ citySelect.value=city.dataset.city;localStorage.setItem("satiMedicsCity",city.dataset.city);toast("Service city set to "+city.dataset.city); }
   if(e.target.id==="saveReminder"){
-    const med=document.getElementById("remMed").value.trim(),date=document.getElementById("remDate").value;
-    if(!med||!date) return toast("Add medicine and reminder date");
-    localStorage.setItem("satiMedicsReminder",JSON.stringify({medicine:med,date}));
-    closeModal(); toast("Reminder saved locally"); renderProfile();
+    e.preventDefault();
+    const form=document.getElementById("reminderForm"); clearFormErrors(form);
+    const med=document.getElementById("remMed").value.trim(),date=document.getElementById("remDate").value,time=document.getElementById("remTime").value,frequency=document.getElementById("remFrequency").value;
+    if(med.length<2) return failField("remMed","Enter the medicine name.");
+    if(!date||date<todayISO()) return failField("remDate","Choose today or a future date.");
+    if(!time) return failField("remTime","Choose a reminder time.");
+    const reminder={id:makeId("RM"),medicine:med,date,time,frequency,createdAt:new Date().toISOString()};
+    localStorage.setItem("satiMedicsReminder",JSON.stringify(reminder)); saveList("satiMedicsReminders",reminder);
+    closeModal(); toast("Medicine reminder saved"); renderProfile();
   }
 });
 document.getElementById("modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal();});
