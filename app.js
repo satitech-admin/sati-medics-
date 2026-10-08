@@ -1,25 +1,40 @@
 const medicines = [
-  {id:1,name:"Dolo 650",salt:"Paracetamol 650 mg",price:15,rx:false,cat:"Fever & Pain"},
-  {id:2,name:"Azithral 500",salt:"Azithromycin 500 mg",price:75,rx:true,cat:"Prescription"},
-  {id:3,name:"Shelcal 500",salt:"Calcium + Vitamin D3",price:120,rx:false,cat:"Vitamins"},
-  {id:4,name:"Glycomet 500",salt:"Metformin 500 mg",price:45,rx:true,cat:"Diabetes"},
-  {id:5,name:"Amlodipine 5 mg",salt:"Amlodipine",price:25,rx:true,cat:"Heart Care"},
-  {id:6,name:"Limcee",salt:"Vitamin C 500 mg",price:30,rx:false,cat:"Vitamins"},
-  {id:7,name:"Cetirizine",salt:"Cetirizine 10 mg",price:22,rx:false,cat:"Allergy"},
-  {id:8,name:"Pantop 40",salt:"Pantoprazole 40 mg",price:86,rx:true,cat:"Digestive Care"},
-  {id:9,name:"ORS Sachet",salt:"Oral Rehydration Salts",price:24,rx:false,cat:"General Care"},
-  {id:10,name:"Volini Gel",salt:"Topical pain relief",price:165,rx:false,cat:"Fever & Pain"},
-  {id:11,name:"B-Complex",salt:"Vitamin B Complex",price:95,rx:false,cat:"Vitamins"},
-  {id:12,name:"Digital Thermometer",salt:"Healthcare device",price:199,rx:false,cat:"General Care"}
+  {id:1,name:"Dolo 650",brand:"Micro Labs",salt:"Paracetamol 650 mg",price:32,rx:false,cat:"Fever & Pain",tag:"Popular",image:"https://ayushcare.in/cdn/shop/products/Dolo650.jpg?v=1747141378&width=1445"},
+  {id:2,name:"Crocin Advance 500",brand:"GSK",salt:"Paracetamol 500 mg",price:19,rx:false,cat:"Fever & Pain",tag:"Popular",image:"https://cdn01.pharmeasy.in/dam/products_otc/049311/crocin-advance-500mg-strip-of-15-tablets-1.jpg"},
+  {id:3,name:"Saridon",brand:"Piramal",salt:"Paracetamol + Caffeine",price:55,rx:false,cat:"Fever & Pain",tag:"Bestseller",image:"https://cdn.farmako.ai/inventory/images/b0a526a7-7b96-438d-be46-504608b53e53/fcd3fbce-439e-4181-9b5d-419b6e4c610b.png"},
+  {id:4,name:"Volini Pain Relief Gel",brand:"Sun Pharma",salt:"Topical pain relief gel",price:245,rx:false,cat:"Pain Relief",tag:"Popular",image:"https://images.apollo247.in/pub/media/catalog/product/v/o/vol0149_11_1_.jpg"},
+  {id:5,name:"Moov Pain Relief Cream",brand:"Reckitt",salt:"Topical pain relief cream",price:155,rx:false,cat:"Pain Relief",tag:"Popular",image:"https://www.vamacy.com/cdn/shop/files/MOO30G.jpg?v=1756288163"},
+  {id:6,name:"Iodex Fast Relief Balm",brand:"GSK",salt:"Topical pain relief balm",price:105,rx:false,cat:"Pain Relief",tag:"Popular",image:"https://m237.apollo247.com/pub/media/catalog/product/I/O/IOD0007_1-AUG23_1.jpg"},
+  {id:7,name:"Digene Gel",brand:"Abbott",salt:"Antacid / anti-gas gel",price:145,rx:false,cat:"Digestive Care",tag:"Popular",image:"https://imgwlns.gumlet.io/images/products/320465-2.jpg"},
+  {id:8,name:"Gelusil MPS",brand:"Pfizer",salt:"Antacid oral liquid",price:173,rx:false,cat:"Digestive Care",tag:"Popular",image:"https://www.jeevandip.com/media/product/image/720/gelusil-mps-syrup-mainimage-yancjdi9dsgy137lrlw8d1ec.webp"},
+  {id:9,name:"Hajmola Regular",brand:"Dabur",salt:"Digestive tablets",price:68,rx:false,cat:"Digestive Care",tag:"Popular",image:"https://www.silkrute.ca/images/detailed/3077/Dabur-Hajmola-Digestive-Tablets_1500x.jpg"},
+  {id:10,name:"Electral ORS",brand:"FDC",salt:"Oral rehydration salts",price:25,rx:false,cat:"Hydration",tag:"Essential",image:"https://i.ebayimg.com/images/g/4kgAAeSwsh9ojJDs/s-l1200.jpg"},
+  {id:11,name:"Limcee 500",brand:"Abbott",salt:"Vitamin C 500 mg",price:25,rx:false,cat:"Vitamins",tag:"Popular",image:"https://ik.imagekit.io/wlfr/wellness/images/products/207125-1.jpg"},
+  {id:12,name:"Shelcal 500",brand:"Torrent",salt:"Calcium + Vitamin D3",price:132,rx:false,cat:"Vitamins",tag:"Popular",image:"https://www.clickoncare.com/cdn/shop/files/shelcal_tablets_online_on_clickoncare.jpg?v=1757866731"},
+  {id:13,name:"Evion 400",brand:"P&G Health",salt:"Vitamin E 400 mg",price:99,rx:false,cat:"Vitamins",tag:"Popular",image:"https://www.delmeds.com/cdn/shop/files/Evion_400_Vitamin_E_Capsule_New.jpg"},
+  {id:14,name:"Vicks VapoRub",brand:"P&G",salt:"Cold symptom relief balm",price:165,rx:false,cat:"Cold & Cough",tag:"Popular",image:"https://asiangroceryuk.co.uk/cdn/shop/products/vicks-vapor-rub-50g-8250447.jpg?crop=center&height=1200&v=1766451675&width=1200"},
+  {id:15,name:"Otrivin Oxy",brand:"GSK",salt:"Oxymetazoline nasal spray",price:112,rx:false,cat:"Cold & Cough",tag:"Popular",image:"https://5.imimg.com/data5/SELLER/Default/2025/4/503069451/WF/TP/YD/157167112/oxymetazoline-nasal-spray-500x500.jpg"},
+  {id:16,name:"Cofsils Ginger Lemon",brand:"Cipla Health",salt:"Throat lozenges",price:36,rx:false,cat:"Cold & Cough",tag:"Popular",image:"https://images.apollo247.in/pub/media/catalog/product/C/O/COF0237_1.jpg"},
+  {id:17,name:"Strepsils Orange",brand:"Reckitt",salt:"Throat lozenges",price:35,rx:false,cat:"Cold & Cough",tag:"Popular",image:"https://cpimg.tistatic.com/11589438/b/4/Strepsils-Strip..png"},
+  {id:18,name:"Benadryl Cough Formula",brand:"Kenvue",salt:"Cough formula 150 ml",price:136,rx:false,cat:"Cold & Cough",tag:"Popular",image:"https://static2.medplusmart.com/products/_41f800_/BENA0012_L.jpg"},
+  {id:19,name:"Betadine Ointment",brand:"Win-Medicare",salt:"Povidone-Iodine 10% w/w",price:132,rx:false,cat:"First Aid",tag:"Essential",image:"https://imgwlns.gumlet.io/images/products/368758-1.jpg"},
+  {id:20,name:"Candid Dusting Powder",brand:"Glenmark",salt:"Clotrimazole dusting powder",price:162,rx:false,cat:"Skin Care",tag:"Popular",image:"https://cdn.pixelbin.io/v2/plain-cake-860195/netmed/wrkr/products/pictures/item/free/original/P35i2Kyrkv-candid_dusting_powder_120_gm_0_0.jpg"},
+  {id:21,name:"Refresh Tears",brand:"Allergan",salt:"Carboxymethylcellulose eye drops",price:119,rx:false,cat:"Eye Care",tag:"Popular",image:"https://tiimg.tistatic.com/fp/3/007/851/refresh-tears-eye-drop-10ml-616.jpg"},
+  {id:22,name:"Soframycin Skin Cream",brand:"Sanofi",salt:"Framycetin skin cream",price:55,rx:true,cat:"Skin Care",tag:"Rx",image:"https://omhealthcart.com/media/catalog/product/cache/94963f09fbd8a8dba3cc97c9485e8b36/s/o/soframycin-skin-cream_1.jpg"},
+  {id:23,name:"PAN 40",brand:"Alkem",salt:"Pantoprazole 40 mg",price:193,rx:true,cat:"Prescription",tag:"Rx",image:"https://www.practostatic.com/practopedia-images/v3/res-750/pan-40mg-tablet-15-s_e0c8cd8e-1788-4c84-8491-99aa23ab675a.JPG"},
+  {id:24,name:"Allegra 120",brand:"Sanofi",salt:"Fexofenadine 120 mg",price:246,rx:true,cat:"Prescription",tag:"Rx",image:"https://aajpharmacy.com/uploads/1611680894_0_0.0.jpg"},
+  {id:25,name:"Azithral 500",brand:"Alembic",salt:"Azithromycin 500 mg",price:125,rx:true,cat:"Prescription",tag:"Rx",image:"https://www.practostatic.com/practopedia-images/v3/res-750/azithral-500mg-tablet-5-s_f6ba2cec-3738-4978-9a6c-751392ff2141.JPG"},
+  {id:26,name:"Augmentin 625 Duo",brand:"GSK",salt:"Amoxicillin + Clavulanic Acid",price:195,rx:true,cat:"Prescription",tag:"Rx",image:"https://images.apollo247.in/pub/media/catalog/product/a/u/aug0004_2.jpg"},
+  {id:27,name:"Meftal-Spas",brand:"Blue Cross",salt:"Mefenamic Acid + Dicyclomine",price:52,rx:true,cat:"Prescription",tag:"Rx",image:"https://cdn.dotpe.in/longtail/store-items/8518100/qQeKJvGK.webp"}
 ];
 
 const doctors = [
-  {name:"Dr. Rohan Sharma",specialty:"General Physician",degree:"MBBS, MD",exp:"9 years",rating:"4.8",fee:299,initials:"RS"},
-  {name:"Dr. Neha Verma",specialty:"Gynecologist",degree:"MBBS, MS",exp:"8 years",rating:"4.7",fee:399,initials:"NV"},
-  {name:"Dr. Amit Jain",specialty:"Dermatologist",degree:"MBBS, MD",exp:"6 years",rating:"4.6",fee:349,initials:"AJ"},
-  {name:"Dr. Priya Nair",specialty:"Pediatrician",degree:"MBBS, DCH",exp:"10 years",rating:"4.9",fee:399,initials:"PN"},
-  {name:"Dr. Arjun Mehta",specialty:"Orthopedic",degree:"MBBS, MS Ortho",exp:"12 years",rating:"4.8",fee:499,initials:"AM"},
-  {name:"Dr. Sana Khan",specialty:"Mental Wellness",degree:"MD Psychiatry",exp:"7 years",rating:"4.9",fee:549,initials:"SK"}
+  {name:"Dr. Rohan Sharma",specialty:"General Physician",degree:"MBBS, MD",exp:"9 years",rating:"4.8",fee:299,initials:"RS",photo:"https://images.pexels.com/photos/27298085/pexels-photo-27298085/free-photo-of-portrait-clinic-doctor-healthcare.jpeg?auto=compress&cs=tinysrgb&w=700"},
+  {name:"Dr. Neha Verma",specialty:"Gynecologist",degree:"MBBS, MS",exp:"8 years",rating:"4.7",fee:399,initials:"NV",photo:"https://images.pexels.com/photos/32428850/pexels-photo-32428850/free-photo-of-professional-female-doctor-portrait-in-clinic.jpeg?auto=compress&cs=tinysrgb&w=700"},
+  {name:"Dr. Amit Jain",specialty:"Dermatologist",degree:"MBBS, MD",exp:"6 years",rating:"4.6",fee:349,initials:"AJ",photo:"https://images.pexels.com/photos/27298085/pexels-photo-27298085/free-photo-of-portrait-clinic-doctor-healthcare.jpeg?auto=compress&cs=tinysrgb&w=700"},
+  {name:"Dr. Priya Nair",specialty:"Pediatrician",degree:"MBBS, DCH",exp:"10 years",rating:"4.9",fee:399,initials:"PN",photo:"https://images.pexels.com/photos/5998477/pexels-photo-5998477.jpeg?auto=compress&cs=tinysrgb&w=700"},
+  {name:"Dr. Arjun Mehta",specialty:"Orthopedic",degree:"MBBS, MS Ortho",exp:"12 years",rating:"4.8",fee:499,initials:"AM",photo:"https://images.pexels.com/photos/27298085/pexels-photo-27298085/free-photo-of-portrait-clinic-doctor-healthcare.jpeg?auto=compress&cs=tinysrgb&w=700"},
+  {name:"Dr. Sana Khan",specialty:"Mental Wellness",degree:"MD Psychiatry",exp:"7 years",rating:"4.9",fee:549,initials:"SK",photo:"https://images.pexels.com/photos/32428850/pexels-photo-32428850/free-photo-of-professional-female-doctor-portrait-in-clinic.jpeg?auto=compress&cs=tinysrgb&w=700"}
 ];
 
 const labs = [
@@ -136,21 +151,29 @@ function renderHome(){
 
 function renderMedicines(query=""){
   view.innerHTML=`<section class="page">
-    <div class="page-header"><div><span class="eyebrow">MEDICINE DELIVERY</span><h1>Order medicines</h1><p>Search common medicines and healthcare products. Prescription-only products require valid prescription review before fulfilment.</p></div><button class="secondary-btn" data-nav="prescription">Upload prescription</button></div>
-    <div class="info-callout"><b>Important:</b> Product names and prices on this preview are sample catalogue data. Live inventory, price, substitution and delivery availability must come from the connected licensed pharmacy system.</div>
-    <div class="toolbar"><input id="medSearch" placeholder="Search medicine, salt or category..." value="${esc(query)}"><select id="catFilter"><option>All categories</option>${[...new Set(medicines.map(m=>m.cat))].map(c=>`<option>${esc(c)}</option>`).join("")}</select></div>
+    <div class="page-header"><div><span class="eyebrow">MEDICINE DELIVERY</span><h1>Medicines & healthcare essentials</h1><p>Browse a broad catalogue of commonly purchased Indian pharmacy brands and essentials. Prescription products stay behind Rx review.</p></div><button class="secondary-btn" data-nav="prescription">Upload prescription</button></div>
+    <div class="catalog-note"><strong>Real product catalogue preview</strong><span>Product photos match the listed brand/medicine. Price and city stock remain indicative until live pharmacy inventory is connected.</span></div>
+    <div class="toolbar"><input id="medSearch" placeholder="Search medicine, brand, salt or category..." value="${esc(query)}"><select id="catFilter"><option>All categories</option>${[...new Set(medicines.map(m=>m.cat))].map(c=>`<option>${esc(c)}</option>`).join("")}</select></div>
     <div class="product-grid" id="productGrid"></div>
   </section>`;
 
   const draw=()=>{
     const q=document.getElementById("medSearch").value.toLowerCase();
     const cat=document.getElementById("catFilter").value;
-    const list=medicines.filter(m=>(m.name+" "+m.salt+" "+m.cat).toLowerCase().includes(q)&&(cat==="All categories"||m.cat===cat));
-    document.getElementById("productGrid").innerHTML=list.map(m=>`<article class="card">
-      <div class="product-image">${m.rx?"Rx":"OTC"}</div>
-      <div style="margin-top:12px"><span class="badge ${m.rx?"warn":""}">${m.rx?"Prescription review required":"Non-Rx / wellness sample"}</span><h3>${esc(m.name)}</h3><small>${esc(m.salt)}</small></div>
-      <div class="price-row"><span class="price">${money(m.price)}</span><button class="pill-btn" data-add="${m.id}">Add +</button></div>
-    </article>`).join("") || '<div class="empty"><h2>No matching item</h2><p>Try another medicine, salt or category.</p></div>';
+    const list=medicines.filter(m=>(m.name+" "+m.brand+" "+m.salt+" "+m.cat).toLowerCase().includes(q)&&(cat==="All categories"||m.cat===cat));
+    document.getElementById("productGrid").innerHTML=list.map(m=>`<article class="card medicine-card">
+      <div class="medicine-image-wrap">
+        <img class="medicine-image" src="${esc(m.image)}" alt="${esc(m.name)} product pack" loading="lazy" onerror="this.closest('.medicine-image-wrap').classList.add('image-fallback');this.remove()">
+        <span class="medicine-tag ${m.rx?"rx-tag":""}">${m.rx?"Rx required":esc(m.tag||"Popular")}</span>
+      </div>
+      <div class="medicine-copy">
+        <small class="medicine-brand">${esc(m.brand)}</small>
+        <h3>${esc(m.name)}</h3>
+        <small>${esc(m.salt)}</small>
+      </div>
+      <div class="medicine-meta"><span>Available by city stock</span><span>${m.rx?"Prescription review":"Common retail item"}</span></div>
+      <div class="price-row"><div><span class="price">${money(m.price)}</span><small class="indicative">indicative</small></div><button class="pill-btn" data-add="${m.id}">Add +</button></div>
+    </article>`).join("") || '<div class="empty"><h2>No matching product</h2><p>Try another medicine, brand, salt or category.</p></div>';
     document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addToCart(+b.dataset.add));
   };
   draw();
@@ -177,7 +200,7 @@ function renderConsult(specialty=""){
     const list=doctors.filter(d=>f==="All specialties"||d.specialty===f);
     document.getElementById("doctorGrid").innerHTML=list.map(d=>`<article class="card">
       <span class="badge">Sample provider profile</span>
-      <div class="doctor-head" style="margin-top:12px"><div class="doctor-avatar">${esc(d.initials)}</div><div><h3>${esc(d.name)}</h3><small>${esc(d.specialty)}</small></div></div>
+      <div class="doctor-head" style="margin-top:12px"><div class="doctor-avatar"><img src="${esc(d.photo)}" alt="${esc(d.name)}" loading="lazy"></div><div><h3>${esc(d.name)}</h3><small>${esc(d.specialty)}</small></div></div>
       <p>${esc(d.degree)} • ${esc(d.exp)}</p>
       <div class="rating">★ ${esc(d.rating)} sample rating display</div>
       <div class="price-row"><span class="price">${money(d.fee)}</span><button class="pill-btn" data-book="${doctors.indexOf(d)}">Consult now</button></div>
@@ -205,7 +228,7 @@ function renderBooking(doc){
           <button class="primary-btn" id="confirmConsult">Confirm preview booking • ${money(doc.fee)}</button>
         </div>
       </div>
-      <div class="video-mock"><div class="video-screen"><div><div class="avatar">${esc(doc.initials)}</div><h2 style="color:white">${esc(doc.name)}</h2><p>Secure consultation-room preview</p><p style="opacity:.72">Production video/audio service requires a compliant real-time communications integration.</p></div></div></div>
+      <div class="video-mock"><div class="video-screen"><div><div class="avatar"><img src="${esc(doc.photo)}" alt="${esc(doc.name)}"></div><h2 style="color:white">${esc(doc.name)}</h2><p>Secure consultation-room preview</p><p style="opacity:.72">Production video/audio service requires a compliant real-time communications integration.</p></div></div></div>
     </div>
   </section>`;
   document.getElementById("confirmConsult").onclick=()=>{
