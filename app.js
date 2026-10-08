@@ -366,6 +366,10 @@ function renderLabBooking(lab){
     if(!validMobile(phone)) return failField("labPhone","Enter a valid 10-digit Indian mobile number.");
     if(!date||date<todayISO()) return failField("labDate","Choose today or a future collection date.");
     if(!slot) return failField("labSlot","Select a preferred collection time.");
+    if(date===todayISO()){
+      const endHour={"06:00 AM – 08:00 AM":8,"08:00 AM – 10:00 AM":10,"10:00 AM – 12:00 PM":12,"04:00 PM – 06:00 PM":18}[slot];
+      if(endHour!==undefined && new Date().getHours()>=endHour) return failField("labSlot","That collection window has already passed today. Choose a later slot or another date.");
+    }
     if(!validPincode(pin)) return failField("labPincode","Enter a valid 6-digit pincode.");
     if(address.length<10) return failField("labAddress","Enter a complete collection address.");
     if(!document.getElementById("labConsent").checked){formStatus(form,"Please accept the collection acknowledgement.");return;}
@@ -462,7 +466,7 @@ function renderCheckout(){
           </div>
           <div class="field-grid two">
             <div class="field"><label for="addressType">Address type</label><select id="addressType"><option>Home</option><option>Work</option><option>Other</option></select></div>
-            <div class="field"><label for="pay">Payment preference <span>*</span></label><select id="pay"><option value="cod">Cash on delivery</option><option value="upi">UPI on delivery</option><option value="online">Online payment — gateway required</option></select></div>
+            <div class="field"><label for="pay">Payment preference <span>*</span></label><select id="pay"><option value="cod">Cash on delivery</option><option value="upi">UPI on delivery</option><option value="online" disabled>Online payment — available after gateway integration</option></select></div>
           </div>
           <div class="field"><label for="deliveryNote">Delivery instructions</label><textarea id="deliveryNote" rows="3" maxlength="250" placeholder="Gate, floor, call-before-delivery, etc. (optional)"></textarea></div>
           <label class="consent-row"><input id="orderConsent" type="checkbox"><span>I agree that final stock, price, prescription approval and delivery estimate are confirmed only after live pharmacy review.</span></label>
@@ -631,6 +635,7 @@ document.addEventListener("click",e=>{
     if(med.length<2) return failField("remMed","Enter the medicine name.");
     if(!date||date<todayISO()) return failField("remDate","Choose today or a future date.");
     if(!time) return failField("remTime","Choose a reminder time.");
+    if(date===todayISO() && new Date(date+"T"+time).getTime()<=Date.now()) return failField("remTime","Choose a future time for today's reminder.");
     const reminder={id:makeId("RM"),medicine:med,date,time,frequency,createdAt:new Date().toISOString()};
     localStorage.setItem("satiMedicsReminder",JSON.stringify(reminder)); saveList("satiMedicsReminders",reminder);
     closeModal(); toast("Medicine reminder saved"); renderProfile();
