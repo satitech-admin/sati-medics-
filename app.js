@@ -25,7 +25,12 @@ const medicines = [
   {id:24,name:"Allegra 120",brand:"Sanofi",salt:"Fexofenadine 120 mg",price:246,rx:true,cat:"Prescription",tag:"Rx",image:"https://aajpharmacy.com/uploads/1611680894_0_0.0.jpg"},
   {id:25,name:"Azithral 500",brand:"Alembic",salt:"Azithromycin 500 mg",price:125,rx:true,cat:"Prescription",tag:"Rx",image:"https://www.practostatic.com/practopedia-images/v3/res-750/azithral-500mg-tablet-5-s_f6ba2cec-3738-4978-9a6c-751392ff2141.JPG"},
   {id:26,name:"Augmentin 625 Duo",brand:"GSK",salt:"Amoxicillin + Clavulanic Acid",price:195,rx:true,cat:"Prescription",tag:"Rx",image:"https://images.apollo247.in/pub/media/catalog/product/a/u/aug0004_2.jpg"},
-  {id:27,name:"Meftal-Spas",brand:"Blue Cross",salt:"Mefenamic Acid + Dicyclomine",price:52,rx:true,cat:"Prescription",tag:"Rx",image:"https://cdn.dotpe.in/longtail/store-items/8518100/qQeKJvGK.webp"}
+  {id:27,name:"Meftal-Spas",brand:"Blue Cross",salt:"Mefenamic Acid + Dicyclomine",price:52,rx:true,cat:"Prescription",tag:"Rx",image:"https://cdn.dotpe.in/longtail/store-items/8518100/qQeKJvGK.webp"},
+  {id:28,name:"Glycomet 500",brand:"USV",salt:"Metformin 500 mg",price:20,rx:true,cat:"Diabetes Care",tag:"Rx",image:"https://images.apollo247.in/pub/media/catalog/product/G/L/GLY0024_1.jpg?tr=q-85"},
+  {id:29,name:"Telma 40",brand:"Glenmark",salt:"Telmisartan 40 mg",price:114,rx:true,cat:"Heart & BP Care",tag:"Rx",image:"https://ik.imagekit.io/wlfr/wellness/images/products/298416-1.jpg"},
+  {id:30,name:"Ecosprin 75",brand:"USV",salt:"Aspirin gastro-resistant 75 mg",price:6,rx:true,cat:"Heart & BP Care",tag:"Rx",image:"https://images.apollo247.in/pub/media/catalog/product/E/C/ECO0005_1_1.jpg?tr=q-80"},
+  {id:31,name:"Thyronorm 50 mcg",brand:"Abbott",salt:"Thyroxine Sodium 50 mcg",price:180,rx:true,cat:"Thyroid Care",tag:"Rx",image:"https://cdn.pixelbin.io/v2/plain-cake-860195/netmed/wrkr/products/assets/item/free/original/Gbmx7ZA-zv-thyronorm_50mcg_tablet_120s_129033_0_1.jpg"},
+  {id:32,name:"Stamlo 5",brand:"Dr. Reddy's",salt:"Amlodipine 5 mg",price:110,rx:true,cat:"Heart & BP Care",tag:"Rx",image:"https://www.getomeds.com/ryno-includes/source/products/stamlo-5-tablet/stamlo-5-tablet-1.jpg"}
 ];
 
 const doctors = [
