@@ -300,3 +300,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* Keep notification action discoverable in mobile client demos */
+@media(max-width:620px){
+  .header-actions #notificationBtn{display:grid}
+  .topbar{gap:6px}
+  .header-actions{gap:3px}
+}
+@media(max-width:390px){
+  .location-pill select{max-width:66px}
+  .header-actions #notificationBtn{display:grid}
+}
