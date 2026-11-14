@@ -70,7 +70,11 @@ const healthPrograms = [
   {code:"MW",title:"Mental Wellness",copy:"Private access to professional consultation workflows for mental wellness.",items:["Appointment booking","Video/chat options","Follow-up schedule","Private care history"]}
 ];
 
-let cart = JSON.parse(localStorage.getItem("satiMedicsCart") || "[]");
+let cart = [];
+try {
+  const saved = JSON.parse(localStorage.getItem("satiMedicsCart") || "[]");
+  if(Array.isArray(saved)) cart = saved.filter(x => x && Number.isInteger(x.id) && medicines.some(m => m.id === x.id)).map(x => ({...medicines.find(m => m.id === x.id), qty:Math.min(20,Math.max(1,Math.floor(Number(x.qty)||1)))}));
+} catch { cart=[]; }
 let activeView = "home";
 let deferredInstallPrompt = null;
 const view = document.getElementById("view");
@@ -181,7 +185,8 @@ function formatWhen(value){
   try{return new Date(value).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});}catch{return value;}
 }
 function hasPrescriptionAttachment(){
-  try{return !!JSON.parse(localStorage.getItem("satiMedicsRxMeta")||"null");}catch{return false;}
+  // Filename metadata is not an uploaded, pharmacist-readable prescription.
+  return false;
 }
 
 function renderHome(){
@@ -248,6 +253,8 @@ function renderMedicines(query=""){
 function addToCart(id){
   const m=medicines.find(x=>x.id===id);
   const row=cart.find(x=>x.id===id);
+  if(!m) return toast("Medicine not found");
+  if(row && row.qty>=20) return toast("Maximum 20 units per medicine in preview");
   if(row) row.qty++; else cart.push({...m,qty:1});
   saveCart();
   toast(m.name+" added to cart");
@@ -383,10 +390,10 @@ function renderPrescription(){
   const profile=getProfileDefaults();
   const existing=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsRxMeta")||"null");}catch{return null;}})();
   view.innerHTML=`<section class="page">
-    <div class="page-header"><div><span class="eyebrow">PRESCRIPTION ORDER</span><h1>Upload a prescription</h1><p>Attach a clear prescription for review before fulfilment of medicines that require one.</p></div></div>
+    <div class="page-header"><div><span class="eyebrow">PRESCRIPTION ORDER</span><h1>Prescription file demo</h1><p>Choose a file to test validation. Your document is not uploaded or reviewed.</p></div></div>
     <div class="section-block form-card" style="max-width:780px">
       ${existing?`<div class="form-status success">Prescription attached for ${esc(existing.patient||"patient")} • ${esc(existing.name||"file")}</div>`:""}
-      <div class="info-callout" style="margin-top:0"><b>Privacy notice:</b> This GitHub Pages prototype does not upload the file to a healthcare backend. Only filename/type metadata is stored locally for the demo flow.</div>
+      <div class="info-callout" style="margin-top:0"><b>Demo only:</b> This page cannot upload or verify prescriptions. Do not use it to seek medical fulfilment. Only non-clinical file metadata is stored locally.</div>
       <form class="smart-form" id="rxForm" novalidate>
         <div class="form-status" aria-live="polite"></div>
         <div class="field"><label for="rxFile">Prescription image or PDF <span>*</span></label><input id="rxFile" type="file" accept=".pdf,image/jpeg,image/png,image/webp"><small>PDF/JPG/PNG/WEBP, up to 8 MB. Upload a readable, uncropped prescription.</small></div>
@@ -398,7 +405,7 @@ function renderPrescription(){
         </div>
         <div class="field"><label for="rxNote">Note for pharmacist</label><textarea id="rxNote" rows="4" maxlength="500" placeholder="Optional note about requested medicines or availability"></textarea></div>
         <label class="consent-row"><input id="rxConsent" type="checkbox"><span>I understand prescription-only medicines require pharmacist review and may be changed, declined or held if the prescription is unclear, invalid or unavailable.</span></label>
-        <div class="form-actions"><button class="primary-btn" id="submitRx" type="submit">Attach for pharmacist review</button><button class="outline-btn" type="button" data-nav="cart">Back to cart</button></div>
+        <div class="form-actions"><button class="primary-btn" id="submitRx" type="submit">Save demo file selection</button><button class="outline-btn" type="button" data-nav="cart">Back to cart</button></div>
       </form>
     </div>
   </section>`;
@@ -416,13 +423,13 @@ function renderPrescription(){
     if(!validMobile(mobile)) return failField("rxMobile","Enter a valid 10-digit Indian mobile number.");
     if(!document.getElementById("rxConsent").checked){formStatus(form,"Please accept the prescription acknowledgement.");return;}
     const btn=document.getElementById("submitRx"); setBusy(btn,true,"Attaching…");
-    const meta={id:makeId("RX"),name:file.name,type:file.type||"unknown",size:file.size,patient,mobile:phone10(mobile),doctor:document.getElementById("rxDoctor").value.trim(),prescriptionDate:document.getElementById("rxDate").value,note:document.getElementById("rxNote").value.trim(),date:new Date().toISOString(),status:"Pending pharmacist review"};
+    const meta={id:makeId("RX"),name:file.name,type:file.type||"unknown",size:file.size,patient,mobile:phone10(mobile),doctor:document.getElementById("rxDoctor").value.trim(),prescriptionDate:document.getElementById("rxDate").value,note:document.getElementById("rxNote").value.trim(),date:new Date().toISOString(),status:"Demo selection only — not uploaded"};
     localStorage.setItem("satiMedicsRxMeta",JSON.stringify(meta)); saveList("satiMedicsPrescriptions",meta);
-    setTimeout(()=>{setBusy(btn,false);formStatus(form,"Prescription attached. Return to cart to continue.","success");toast("Prescription attached for review");},400);
+    setTimeout(()=>{setBusy(btn,false);formStatus(form,"Demo selection saved locally. The file was not uploaded or sent to a pharmacist.","success");toast("Demo selection saved, not uploaded");},400);
   });
 }
 function renderCart(){
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">YOUR CART</span><h1>Medicine cart</h1><p>Review items before entering delivery details.</p></div></div><div id="cartBody"></div></section>`;
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">YOUR CART</span><h1>Medicine cart</h1><p>Demo catalogue only. No live pharmacy checkout is connected.</p></div></div><div id="cartBody"></div></section>`;
   drawCart();
 }
 function drawCart(){
@@ -437,7 +444,7 @@ function drawCart(){
     ${rxCount?`<div class="info-callout"><b>${rxCount} prescription item(s)</b> in this cart will require prescription validation before live fulfilment.</div>`:""}
     <div class="section-block"><div class="price-row"><div><small>Sample subtotal</small><h2>${money(total)}</h2><small style="color:var(--muted)">Final price and delivery fee depend on live pharmacy data.</small></div><button class="primary-btn" id="checkoutBtn">Proceed to delivery</button></div></div>`;
   document.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>{const i=+b.dataset.minus;cart[i].qty--;if(cart[i].qty<=0)cart.splice(i,1);saveCart();drawCart();});
-  document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{cart[+b.dataset.plus].qty++;saveCart();drawCart();});
+  document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{const item=cart[+b.dataset.plus];if(item.qty>=20){toast("Maximum 20 units per medicine in preview");return;}item.qty++;saveCart();drawCart();});
   document.getElementById("checkoutBtn").onclick=renderCheckout;
 }
 function renderCheckout(){
@@ -470,7 +477,7 @@ function renderCheckout(){
           </div>
           <div class="field"><label for="deliveryNote">Delivery instructions</label><textarea id="deliveryNote" rows="3" maxlength="250" placeholder="Gate, floor, call-before-delivery, etc. (optional)"></textarea></div>
           <label class="consent-row"><input id="orderConsent" type="checkbox"><span>I agree that final stock, price, prescription approval and delivery estimate are confirmed only after live pharmacy review.</span></label>
-          <div class="form-actions"><button class="primary-btn" id="placeOrder" type="submit" ${rxItems.length&&!rxAttached?"disabled":""}>Place order request</button><small>No real payment is collected in this preview.</small></div>
+          <div class="form-actions"><button class="primary-btn" id="placeOrder" type="submit" disabled ${rxItems.length&&!rxAttached?"disabled":""}>Live ordering unavailable</button><small>Demo only: no payment or real order submission is available.</small></div>
         </form>
       </div>
       <aside class="checkout-summary">
@@ -499,10 +506,10 @@ function renderCheckout(){
     if(!document.getElementById("orderConsent").checked){formStatus(form,"Please accept the order acknowledgement.");return;}
     const btn=document.getElementById("placeOrder"); setBusy(btn,true,"Placing order…");
     const hasRx=rxItems.length>0;
-    const order={id:makeId("SM"),time:new Date().toISOString(),items:cart.map(x=>({...x})),status:0,statusText:hasRx?"Awaiting pharmacist review":"Order requested",city:citySelect.value,total,customer:{name,mobile:phone10(phone),email},delivery:{pincode:pin,house,area,landmark:document.getElementById("landmark").value.trim(),type:document.getElementById("addressType").value,note:document.getElementById("deliveryNote").value.trim()},payment:document.getElementById("pay").value,rxRequired:hasRx,rxAttached:hasRx?hasPrescriptionAttachment():false};
+    const order={id:makeId("SM"),time:new Date().toISOString(),items:cart.map(x=>({...x})),status:0,statusText:"Demo request — not submitted",city:citySelect.value,total,customer:{name,mobile:phone10(phone),email},delivery:{pincode:pin,house,area,landmark:document.getElementById("landmark").value.trim(),type:document.getElementById("addressType").value,note:document.getElementById("deliveryNote").value.trim()},payment:document.getElementById("pay").value,rxRequired:hasRx,rxAttached:hasRx?hasPrescriptionAttachment():false};
     localStorage.setItem("satiMedicsOrder",JSON.stringify(order)); saveList("satiMedicsOrders",order);
     cart=[]; saveCart();
-    setTimeout(()=>{setBusy(btn,false);toast("Order request placed");nav("orders");},500);
+    setTimeout(()=>{setBusy(btn,false);toast("Demo request saved on this device only");nav("orders");},500);
   });
 }
 function renderOrders(){
@@ -511,7 +518,7 @@ function renderOrders(){
   const lab=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsLab")||"null");}catch{return null;}})();
   const orderTitle=order?(order.statusText||"Order requested"):"";
   const steps=order?.rxRequired?["Order request received","Prescription / pharmacist review","Packed at pharmacy","Out for delivery","Delivered"]:["Order request received","Pharmacy confirmation","Packed at pharmacy","Out for delivery","Delivered"];
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Orders & appointments</h1><p>Your latest preview activity stored on this device.</p></div></div>
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Demo requests & appointments</h1><p>Local previews only. These requests were not sent to a pharmacy, doctor or lab.</p></div></div>
   ${order?`<div class="section-block"><div class="section-title"><div><span class="badge">Order #${esc(order.id)}</span><h2>${esc(orderTitle)}</h2><p>${esc(order.city)} • ${formatWhen(order.time)}</p></div><span class="product-image" style="width:70px;height:70px">RX</span></div><div class="timeline">${steps.map((label,i)=>`<div class="timeline-step ${i<=Number(order.status||0)?"done":""}"><div class="timeline-dot">${i<=Number(order.status||0)?"✓":i+1}</div><div><strong>${label}</strong><small style="display:block;color:var(--muted);margin-top:4px">${i<=Number(order.status||0)?"Recorded":"Pending confirmation"}</small></div></div>`).join("")}</div><div class="summary-total" style="margin-top:10px"><span>Indicative order value</span><strong>${money(order.total||0)}</strong></div></div>`:'<div class="empty"><h2>No medicine orders yet</h2><p>Place a medicine order request to see the tracking flow.</p><button class="primary-btn" onclick="nav(\'medicines\')">Order medicines</button></div>'}
   ${consult?`<div class="section-block"><span class="badge">Consultation ${esc(consult.id||"")}</span><h2 style="margin-top:10px">${esc(consult.doctor)}</h2><p style="font-size:10px;color:var(--muted)">${esc(consult.patient||"Patient")} • ${esc(consult.specialty)} • ${formatWhen(consult.slot)} • ${esc(consult.mode||"Online")} • ${esc(consult.status||"Requested")}</p></div>`:""}
   ${lab?`<div class="section-block"><span class="badge">Lab ${esc(lab.id||"")}</span><h2 style="margin-top:10px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">${esc(lab.patient||"Patient")} • ${esc(lab.date)} • ${esc(lab.slot||"")} • ${esc(lab.city||citySelect.value)} • ${esc(lab.status||"Requested")}</p></div>`:""}
@@ -537,7 +544,7 @@ function renderProfile(){
         </form>
         <div class="program-grid" style="margin-top:20px"><article><span class="program-icon">FM</span><div><strong>Family profiles</strong><small>Structure care for parents and children</small></div></article><article><span class="program-icon">HR</span><div><strong>Health records</strong><small>Prescription and report workflow</small></div></article><article><span class="program-icon">RR</span><div><strong>Refill reminders</strong><small>${nextReminder?esc(nextReminder.medicine)+" • "+esc(nextReminder.date)+" "+esc(nextReminder.time):"Set your first reminder"}</small></div></article></div>
       </div>
-      <div class="settings-card"><h2>Quick actions</h2><div class="settings-list"><button id="setReminder">Set medicine reminder</button><button data-nav="orders">Orders & appointments</button><button data-nav="prescription">Prescription upload</button><button data-nav="privacy">Privacy & security</button><button data-nav="support">Help & support</button></div></div>
+      <div class="settings-card"><h2>Quick actions</h2><div class="settings-list"><button id="clearDemoData" type="button">Delete demo data from this device</button><button id="setReminder">Set medicine reminder</button><button data-nav="orders">Orders & appointments</button><button data-nav="prescription">Prescription upload</button><button data-nav="privacy">Privacy & security</button><button data-nav="support">Help & support</button></div></div>
     </div>
   </section>`;
   const form=document.getElementById("profileForm");
@@ -550,6 +557,11 @@ function renderProfile(){
     localStorage.setItem("satiMedicsProfile",JSON.stringify({name,mobile:phone10(mobile),email,lang}));
     formStatus(form,"Profile saved on this device.","success");toast("Profile saved");
   });
+  document.getElementById("clearDemoData").onclick=()=>{
+    if(!window.confirm("Delete Sati Medics demo profile, requests, reminders, prescription metadata and cart from this browser?")) return;
+    Object.keys(localStorage).filter(k=>k.startsWith("satiMedics")).forEach(k=>localStorage.removeItem(k));
+    cart=[]; updateCartCount();citySelect.value="Betul";renderProfile();toast("Local demo data deleted");
+  };
   document.getElementById("setReminder").onclick=()=>showModal("Medicine reminder",`<form class="smart-form" id="reminderForm" novalidate><div class="form-status" aria-live="polite"></div><div class="field"><label for="remMed">Medicine name <span>*</span></label><input id="remMed" maxlength="80" placeholder="Medicine name"></div><div class="field-grid two"><div class="field"><label for="remDate">Start date <span>*</span></label><input id="remDate" type="date" min="${todayISO()}"></div><div class="field"><label for="remTime">Reminder time <span>*</span></label><input id="remTime" type="time"></div></div><div class="field"><label for="remFrequency">Frequency</label><select id="remFrequency"><option>Once daily</option><option>Twice daily</option><option>Three times daily</option><option>Weekly</option><option>Custom / as advised</option></select></div><button class="primary-btn" id="saveReminder" type="submit">Save reminder</button></form>`);
 }
 function renderHealthPrograms(){
