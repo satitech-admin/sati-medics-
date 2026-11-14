@@ -92,11 +92,11 @@ function toast(message){
   window.__satiToastTimer=setTimeout(()=>t.classList.remove("show"),2200);
 }
 function setActiveNav(name){
-  const map={labs:"home",prescription:"home",health:"home",cities:"home",about:"home",support:"home",privacy:"home",terms:"home",disclaimer:"home",cart:"medicines"};
+  const map={labs:"home",prescription:"home",health:"home",cities:"home",about:"home",support:"home",privacy:"home",terms:"home",disclaimer:"home",cart:"medicines",checkout:"medicines"};
   const target=map[name] || name;
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.nav===target));
 }
-function nav(name,data={}){
+function nav(name,data={},fromHistory=false){
   activeView=name;
   setActiveNav(name);
   window.scrollTo({top:0,behavior:"smooth"});
@@ -107,6 +107,7 @@ function nav(name,data={}){
     labs:()=>renderLabs(),
     prescription:()=>renderPrescription(),
     cart:()=>renderCart(),
+    checkout:()=>renderCheckout(),
     orders:()=>renderOrders(),
     profile:()=>renderProfile(),
     health:()=>renderHealthPrograms(),
@@ -117,6 +118,7 @@ function nav(name,data={}){
     terms:()=>renderLegal("terms"),
     disclaimer:()=>renderLegal("disclaimer")
   };
+  if(!fromHistory && routes[name] && window.location.hash!=="#/"+name)history.pushState({view:name},"","#/"+name);
   (routes[name] || routes.home)();
 }
 function showModal(title,body){
@@ -342,7 +344,7 @@ function renderBooking(doc){
     if(symptoms.length<10) return failField("symptoms","Please describe the health concern in at least 10 characters.");
     if(!document.getElementById("consultConsent").checked){formStatus(form,"Please accept the consultation acknowledgement.");return;}
     const btn=document.getElementById("confirmConsult"); setBusy(btn,true,"Booking…");
-    const booking={demo:true,id:makeId("SC"),doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name,mobile:phone10(mobile),age,gender:document.getElementById("patientGender").value,symptoms,fee:doc.fee,status:"Demo request — not booked",createdAt:new Date().toISOString()};
+    const booking={demo:true,id:makeId("SC"),doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name,mobile:phone10(mobile),age,gender:document.getElementById("patientGender").value,concernProvided:!!symptoms,fee:doc.fee,status:"Demo request — not booked",createdAt:new Date().toISOString()};
     localStorage.setItem("satiMedicsConsult",JSON.stringify(booking));
     saveList("satiMedicsConsultations",booking);
     setTimeout(()=>{setBusy(btn,false);toast("Demo consultation saved — no doctor booked");nav("orders");},450);
@@ -461,7 +463,7 @@ function drawCart(){
     <div class="section-block"><div class="price-row"><div><small>Sample subtotal</small><h2>${money(total)}</h2><small style="color:var(--muted)">Final price and delivery fee depend on live pharmacy data.</small></div><button class="primary-btn" id="checkoutBtn">Proceed to delivery</button></div></div>`;
   document.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>{const i=+b.dataset.minus;cart[i].qty--;if(cart[i].qty<=0)cart.splice(i,1);saveCart();drawCart();});
   document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{const item=cart[+b.dataset.plus];if(item.qty>=20){toast("Maximum 20 units per medicine in preview");return;}item.qty++;saveCart();drawCart();});
-  document.getElementById("checkoutBtn").onclick=renderCheckout;
+  document.getElementById("checkoutBtn").onclick=()=>nav("checkout");
 }
 function renderCheckout(){
   const profile=getProfileDefaults();
@@ -698,15 +700,27 @@ document.addEventListener("click",e=>{
   }
 });
 document.getElementById("modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal();});
-document.getElementById("notificationBtn").onclick=()=>showModal("Notifications","<p>No new live notifications. Production notifications will include order updates, appointment reminders, report alerts and opt-in refill reminders.</p>");
+document.getElementById("notificationBtn").onclick=()=>{
+  const labels=[["satiMedicsOrder","Demo medicine order"],["satiMedicsConsult","Demo consultation"],["satiMedicsLab","Demo lab request"],["satiMedicsReminder","Local reminder"]];
+  const activities=labels.filter(([key])=>localStorage.getItem(key)).map(([,label])=>"<li>"+label+" saved on this device</li>");
+  showModal("Demo notifications",activities.length?"<p>Sample activities, not live alerts:</p><ul>"+activities.join("")+"</ul>":"<p>No sample activity yet. Choose Load Sample Demo to see the complete flow.</p>");
+};
 document.getElementById("installBtn").onclick=installApp;
+const startDemoBtn=document.getElementById("startDemoBtn");
+if(startDemoBtn)startDemoBtn.onclick=loadShowcaseDemo;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElementById("modalBackdrop").hidden)closeModal();});
+window.addEventListener("popstate",()=>{
+  const route=decodeURIComponent(window.location.hash.replace(/^#\//,""))||"home";
+  nav(route,{},true);
+});
 citySelect.value=localStorage.getItem("satiMedicsCity") || "Betul";
 citySelect.onchange=e=>{localStorage.setItem("satiMedicsCity",e.target.value);toast("Service city changed to "+e.target.value);};
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;});
 window.addEventListener("appinstalled",()=>toast("Sati Medics installed"));
 
 updateCartCount();
-renderHome();
+const initialRoute=decodeURIComponent(window.location.hash.replace(/^#\//,""))||"home";
+if(initialRoute==="home")renderHome();else nav(initialRoute,{},true);
 
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
