@@ -322,7 +322,7 @@ function renderBooking(doc){
           </div>
           <div class="field"><label for="symptoms">Health concern <span>*</span></label><textarea id="symptoms" rows="5" maxlength="700" placeholder="Describe symptoms, duration and any relevant context. Do not use this form for emergencies."></textarea><small>Minimum 10 characters. Avoid sharing unrelated sensitive information.</small></div>
           <label class="consent-row"><input id="consultConsent" type="checkbox"><span>I understand Sati Medics is not an emergency service and that a live consultation requires a verified provider.</span></label>
-          <div class="form-actions"><button class="primary-btn" id="confirmConsult" type="submit">Book consultation • ${money(doc.fee)}</button><small>No payment is collected in this preview.</small></div>
+          <div class="form-actions"><button class="primary-btn" id="confirmConsult" type="submit">Save demo consultation • ${money(doc.fee)}</button><small>No payment is collected in this preview.</small></div>
         </form>
       </div>
       <div class="video-mock"><div class="video-screen"><div><div class="avatar"><img src="${esc(doc.photo)}" alt="${esc(doc.name)}"></div><h2 style="color:white">${esc(doc.name)}</h2><p>Secure consultation-room preview</p><p style="opacity:.72">Production video/audio service requires compliant real-time communications, identity and consent controls.</p></div></div></div>
@@ -340,7 +340,7 @@ function renderBooking(doc){
     if(!validName(name)) return failField("patientName","Enter the patient's full name.");
     if(!validMobile(mobile)) return failField("consultMobile","Enter a valid 10-digit Indian mobile number.");
     if(!Number.isInteger(age)||age<1||age>120) return failField("patientAge","Enter a valid age between 1 and 120.");
-    if(!slot||!futureDateTime(slot,25)) return failField("slot","Choose a future slot at least 30 minutes from now.");
+    if(!slot||!futureDateTime(slot,30)) return failField("slot","Choose a future slot at least 30 minutes from now.");
     if(symptoms.length<10) return failField("symptoms","Please describe the health concern in at least 10 characters.");
     if(!document.getElementById("consultConsent").checked){formStatus(form,"Please accept the consultation acknowledgement.");return;}
     const btn=document.getElementById("confirmConsult"); setBusy(btn,true,"Booking…");
@@ -375,7 +375,7 @@ function renderLabBooking(lab){
         </div>
         <div class="field"><label for="labAddress">Collection address <span>*</span></label><textarea id="labAddress" rows="3" maxlength="280" placeholder="House/flat, street, area and nearby landmark"></textarea></div>
         <label class="consent-row"><input id="labConsent" type="checkbox"><span>I understand the collection request is subject to diagnostic-partner availability and final confirmation.</span></label>
-        <div class="form-actions"><button class="primary-btn" id="confirmLab" type="submit">Request collection • ${money(lab.price)}</button><small>Price and report timing are indicative until a live lab partner is connected.</small></div>
+        <div class="form-actions"><button class="primary-btn" id="confirmLab" type="submit">Save demo lab request • ${money(lab.price)}</button><small>Price and report timing are indicative until a live lab partner is connected.</small></div>
       </form>
     </div></section>`;
   const form=document.getElementById("labForm");
@@ -584,7 +584,7 @@ function renderProfile(){
             <div class="field"><label for="profileName">Full name <span>*</span></label><input id="profileName" autocomplete="name" maxlength="70" placeholder="Full name" value="${esc(profile.name||"")}"></div>
             <div class="field"><label for="profileMobile">Mobile number <span>*</span></label><input id="profileMobile" inputmode="tel" autocomplete="tel" maxlength="14" placeholder="10-digit mobile number" value="${esc(profile.mobile||"")}"></div>
             <div class="field"><label for="profileEmail">Email</label><input id="profileEmail" type="email" autocomplete="email" placeholder="Email (optional)" value="${esc(profile.email||"")}"></div>
-            <div class="field"><label for="profileLang">Preferred language</label><select id="profileLang"><option ${profile.lang==="English"?"selected":""}>English</option><option ${profile.lang==="हिन्दी"?"selected":""}>हिन्दी</option></select></div>
+            <div class="field"><label for="profileLang">Preferred language (profile preference only)</label><select id="profileLang"><option ${profile.lang==="English"?"selected":""}>English</option><option ${profile.lang==="हिन्दी"?"selected":""}>हिन्दी</option></select></div>
           </div>
           <div class="form-actions"><button class="primary-btn" id="saveProfile" type="submit">Save profile</button></div>
         </form>
@@ -636,7 +636,7 @@ function renderSupport(){
         <div class="field-grid two"><div class="field"><label for="supportName">Your name <span>*</span></label><input id="supportName" autocomplete="name" maxlength="70" value="${esc(profile.name||"")}" placeholder="Full name"></div><div class="field"><label for="supportMobile">Mobile number <span>*</span></label><input id="supportMobile" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(profile.mobile||"")}" placeholder="10-digit mobile number"></div></div>
         <div class="field"><label for="supportRef">Order / booking ID</label><input id="supportRef" maxlength="30" value="${esc(currentOrder?.id||"")}" placeholder="Optional reference ID"></div>
         <div class="field"><label for="supportMsg">Describe the issue <span>*</span></label><textarea id="supportMsg" rows="5" maxlength="1000" placeholder="Tell us what happened and what help you need"></textarea><small>Do not submit emergency symptoms or unnecessary medical records here.</small></div>
-        <div class="form-actions"><button class="primary-btn" id="submitSupport" type="submit">Submit support request</button></div>
+        <div class="form-actions"><button class="primary-btn" id="submitSupport" type="submit">Save demo support request</button></div>
       </form>
     </div><div class="support-card"><h2>Need urgent medical help?</h2><p>Sati Medics is not an ambulance or emergency response service. In India, call <b>112</b> or seek immediate care from the nearest appropriate emergency facility.</p><h2 style="margin-top:24px">Common actions</h2><div class="settings-list"><button data-nav="orders">Track an order</button><button data-nav="prescription">Prescription help</button><button data-nav="consult">Doctor consultation</button><button data-nav="labs">Lab booking</button></div></div></div>
   </section>`;
@@ -649,7 +649,7 @@ function renderSupport(){
     if(msg.length<12) return failField("supportMsg","Describe the issue in at least 12 characters.");
     const ticket={id:makeId("SS"),name,mobile:phone10(mobile),type:document.getElementById("supportType").value,ref:document.getElementById("supportRef").value.trim(),message:msg,date:new Date().toISOString(),status:"Open"};
     localStorage.setItem("satiMedicsSupport",JSON.stringify(ticket));saveList("satiMedicsSupportTickets",ticket);
-    form.reset();formStatus(form,"Support request saved. Reference: "+ticket.id,"success");toast("Support request saved");
+    form.reset();formStatus(form,"Support request saved. Reference: "+ticket.id,"success");toast("Demo support request saved only on this device");
   });
 }
 function renderLegal(type){
