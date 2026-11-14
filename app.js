@@ -262,7 +262,7 @@ function addToCart(id){
 
 function renderConsult(specialty=""){
   view.innerHTML=`<section class="page">
-    <div class="page-header"><div><span class="eyebrow">DOCTOR CONSULTATION</span><h1>Consult by specialty</h1><p>Choose a specialty and consultation mode. Provider profiles below are sample UI data until verified doctors are formally onboarded.</p></div></div>
+    <div class="page-header"><div><span class="eyebrow">DOCTOR CONSULTATION</span><h1>Consult by specialty</h1><p>Browse sample provider profiles. Consultation requests are stored on this device only and do not reach any doctor.</p></div></div>
     <div class="info-callout"><b>Not for emergencies:</b> Sati Medics is designed for routine and non-emergency care. For urgent or life-threatening situations in India, call 112 or seek immediate local emergency care.</div>
     <div class="toolbar"><select id="docFilter"><option>All specialties</option>${[...new Set(doctors.map(d=>d.specialty))].map(s=>`<option ${s===specialty?"selected":""}>${esc(s)}</option>`).join("")}</select></div>
     <div class="doctor-grid" id="doctorGrid"></div>
@@ -334,7 +334,7 @@ function renderBooking(doc){
 }
 function renderLabs(){
   view.innerHTML=`<section class="page">
-    <div class="page-header"><div><span class="eyebrow">DIAGNOSTICS</span><h1>Lab tests at home</h1><p>Browse sample diagnostic packages and create a home-collection booking request for ${esc(citySelect.value)}.</p></div></div>
+    <div class="page-header"><div><span class="eyebrow">DIAGNOSTICS</span><h1>Lab tests at home</h1><p>Explore sample packages for ${esc(citySelect.value)}. No home collection is booked until a real lab partner is integrated.</p></div></div>
     <div class="info-callout"><b>Preview data:</b> Test prices, report windows and availability are placeholders until a certified diagnostic partner and live catalogue are integrated.</div>
     <div class="lab-grid">${labs.map((l,i)=>`<article class="card"><div class="product-image">LAB</div><h3>${esc(l.name)}</h3><p>${esc(l.tests)}</p><small>${esc(l.time)}</small><div class="price-row"><span class="price">${money(l.price)}</span><button class="pill-btn" data-lab="${i}">Book test</button></div></article>`).join("")}</div>
   </section>`;
@@ -392,7 +392,7 @@ function renderPrescription(){
   view.innerHTML=`<section class="page">
     <div class="page-header"><div><span class="eyebrow">PRESCRIPTION ORDER</span><h1>Prescription file demo</h1><p>Choose a file to test validation. Your document is not uploaded or reviewed.</p></div></div>
     <div class="section-block form-card" style="max-width:780px">
-      ${existing?`<div class="form-status success">Prescription attached for ${esc(existing.patient||"patient")} • ${esc(existing.name||"file")}</div>`:""}
+      ${existing?`<div class="info-callout">Previous demo selection: ${esc(existing.name||"file")}. No prescription was uploaded or reviewed.</div>`:""}
       <div class="info-callout" style="margin-top:0"><b>Demo only:</b> This page cannot upload or verify prescriptions. Do not use it to seek medical fulfilment. Only non-clinical file metadata is stored locally.</div>
       <form class="smart-form" id="rxForm" novalidate>
         <div class="form-status" aria-live="polite"></div>
@@ -422,8 +422,8 @@ function renderPrescription(){
     if(!validName(patient)) return failField("rxPatient","Enter the patient's full name.");
     if(!validMobile(mobile)) return failField("rxMobile","Enter a valid 10-digit Indian mobile number.");
     if(!document.getElementById("rxConsent").checked){formStatus(form,"Please accept the prescription acknowledgement.");return;}
-    const btn=document.getElementById("submitRx"); setBusy(btn,true,"Attaching…");
-    const meta={id:makeId("RX"),name:file.name,type:file.type||"unknown",size:file.size,patient,mobile:phone10(mobile),doctor:document.getElementById("rxDoctor").value.trim(),prescriptionDate:document.getElementById("rxDate").value,note:document.getElementById("rxNote").value.trim(),date:new Date().toISOString(),status:"Demo selection only — not uploaded"};
+    const btn=document.getElementById("submitRx"); setBusy(btn,true,"Saving demo selection…");
+    const meta={id:makeId("RX"),name:file.name,type:file.type||"unknown",size:file.size,date:new Date().toISOString(),status:"Demo selection only — not uploaded"};
     localStorage.setItem("satiMedicsRxMeta",JSON.stringify(meta)); saveList("satiMedicsPrescriptions",meta);
     setTimeout(()=>{setBusy(btn,false);formStatus(form,"Demo selection saved locally. The file was not uploaded or sent to a pharmacist.","success");toast("Demo selection saved, not uploaded");},400);
   });
@@ -490,6 +490,7 @@ function renderCheckout(){
   const form=document.getElementById("checkoutForm");
   form.addEventListener("submit",e=>{
     e.preventDefault(); clearFormErrors(form);
+    formStatus(form,"Live medicine orders are disabled until licensed pharmacy fulfilment and secure prescription review are integrated."); return;
     if(rxItems.length&&!hasPrescriptionAttachment()){formStatus(form,"Attach a prescription before placing an Rx order.");return;}
     const name=document.getElementById("custName").value.trim();
     const phone=document.getElementById("phone").value.trim();
