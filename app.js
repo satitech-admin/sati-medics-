@@ -342,10 +342,10 @@ function renderBooking(doc){
     if(symptoms.length<10) return failField("symptoms","Please describe the health concern in at least 10 characters.");
     if(!document.getElementById("consultConsent").checked){formStatus(form,"Please accept the consultation acknowledgement.");return;}
     const btn=document.getElementById("confirmConsult"); setBusy(btn,true,"Booking…");
-    const booking={id:makeId("SC"),doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name,mobile:phone10(mobile),age,gender:document.getElementById("patientGender").value,symptoms,fee:doc.fee,status:"Requested",createdAt:new Date().toISOString()};
+    const booking={demo:true,id:makeId("SC"),doctor:doc.name,specialty:doc.specialty,slot,mode:document.getElementById("mode").value,patient:name,mobile:phone10(mobile),age,gender:document.getElementById("patientGender").value,symptoms,fee:doc.fee,status:"Demo request — not booked",createdAt:new Date().toISOString()};
     localStorage.setItem("satiMedicsConsult",JSON.stringify(booking));
     saveList("satiMedicsConsultations",booking);
-    setTimeout(()=>{setBusy(btn,false);toast("Consultation request saved");nav("orders");},450);
+    setTimeout(()=>{setBusy(btn,false);toast("Demo consultation saved — no doctor booked");nav("orders");},450);
   });
 }
 function renderLabs(){
@@ -397,9 +397,9 @@ function renderLabBooking(lab){
     if(address.length<10) return failField("labAddress","Enter a complete collection address.");
     if(!document.getElementById("labConsent").checked){formStatus(form,"Please accept the collection acknowledgement.");return;}
     const btn=document.getElementById("confirmLab"); setBusy(btn,true,"Saving request…");
-    const booking={id:makeId("SL"),...lab,patient,mobile:phone10(phone),date,slot,pincode:pin,address,city:citySelect.value,status:"Requested",createdAt:new Date().toISOString()};
+    const booking={demo:true,id:makeId("SL"),...lab,patient,mobile:phone10(phone),date,slot,pincode:pin,address,city:citySelect.value,status:"Demo request — not booked",createdAt:new Date().toISOString()};
     localStorage.setItem("satiMedicsLab",JSON.stringify(booking)); saveList("satiMedicsLabs",booking);
-    setTimeout(()=>{setBusy(btn,false);toast("Lab collection request saved");nav("orders");},450);
+    setTimeout(()=>{setBusy(btn,false);toast("Demo lab request saved — no collection scheduled");nav("orders");},450);
   });
 }
 function renderPrescription(){
@@ -543,12 +543,30 @@ function renderOrders(){
   const consult=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsConsult")||"null");}catch{return null;}})();
   const lab=(()=>{try{return JSON.parse(localStorage.getItem("satiMedicsLab")||"null");}catch{return null;}})();
   const orderTitle=order?(order.statusText||"Order requested"):"";
-  const steps=order?.rxRequired?["Order request received","Prescription / pharmacist review","Packed at pharmacy","Out for delivery","Delivered"]:["Order request received","Pharmacy confirmation","Packed at pharmacy","Out for delivery","Delivered"];
-  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Demo requests & appointments</h1><p>Local previews only. These requests were not sent to a pharmacy, doctor or lab.</p></div></div>
-  ${order?`<div class="section-block"><div class="section-title"><div><span class="badge">Order #${esc(order.id)}</span><h2>${esc(orderTitle)}</h2><p>${esc(order.city)} • ${formatWhen(order.time)}</p></div><span class="product-image" style="width:70px;height:70px">RX</span></div><div class="timeline">${steps.map((label,i)=>`<div class="timeline-step ${i<=Number(order.status||0)?"done":""}"><div class="timeline-dot">${i<=Number(order.status||0)?"✓":i+1}</div><div><strong>${label}</strong><small style="display:block;color:var(--muted);margin-top:4px">${i<=Number(order.status||0)?"Recorded":"Pending confirmation"}</small></div></div>`).join("")}</div><div class="summary-total" style="margin-top:10px"><span>Indicative order value</span><strong>${money(order.total||0)}</strong></div></div>`:'<div class="empty"><h2>No medicine orders yet</h2><p>Place a medicine order request to see the tracking flow.</p><button class="primary-btn" onclick="nav(\'medicines\')">Order medicines</button></div>'}
+  const steps=order?.rxRequired?["Sample order","Demo Rx review stage","Demo packing","Demo rider transit","Demo delivered"]:["Sample order","Demo pharmacy stage","Demo packing","Demo rider transit","Demo delivered"];
+  view.innerHTML=`<section class="page"><div class="page-header"><div><span class="eyebrow">ACTIVITY</span><h1>Orders & appointments</h1><p>Interactive sample tracking only. Nothing here was sent to a pharmacy, doctor, lab or delivery rider.</p></div><button type="button" class="secondary-btn" id="showcaseAgain">Load sample demo</button></div>
+  ${order?`<div class="section-block"><div class="section-title"><div><span class="badge">Sample Order #${esc(order.id)}</span><h2>${esc(orderTitle)}</h2><p>${esc(order.city)} • ${formatWhen(order.time)}</p></div><span class="product-image" style="width:70px;height:70px">RX</span></div><div class="timeline">${steps.map((label,i)=>`<div class="timeline-step ${i<=Number(order.status||0)?"done":""}"><div class="timeline-dot">${i<=Number(order.status||0)?"✓":i+1}</div><div><strong>${label}</strong><small style="display:block;color:var(--muted);margin-top:4px">${i<=Number(order.status||0)?"Simulated":"Awaiting simulation"}</small></div></div>`).join("")}</div><div class="summary-total" style="margin-top:10px"><span>Sample order value</span><strong>${money(order.total||0)}</strong></div><div class="demo-actions"><button class="primary-btn" id="advanceDemoStage" type="button" ${Number(order.status||0)>=4?"disabled":""}>Simulate next stage →</button><button class="outline-btn" type="button" id="resetDemoStage">Restart tracking</button><button class="outline-btn" type="button" id="reorderDemo">Repeat items</button></div></div>`:'<div class="empty"><h2>No medicine orders yet</h2><p>Place a medicine order request to see the tracking flow.</p><button class="primary-btn" onclick="nav(\'medicines\')">Order medicines</button></div>'}
   ${consult?`<div class="section-block"><span class="badge">Consultation ${esc(consult.id||"")}</span><h2 style="margin-top:10px">${esc(consult.doctor)}</h2><p style="font-size:10px;color:var(--muted)">${esc(consult.patient||"Patient")} • ${esc(consult.specialty)} • ${formatWhen(consult.slot)} • ${esc(consult.mode||"Online")} • ${esc(consult.status||"Requested")}</p></div>`:""}
   ${lab?`<div class="section-block"><span class="badge">Lab ${esc(lab.id||"")}</span><h2 style="margin-top:10px">${esc(lab.name)}</h2><p style="font-size:10px;color:var(--muted)">${esc(lab.patient||"Patient")} • ${esc(lab.date)} • ${esc(lab.slot||"")} • ${esc(lab.city||citySelect.value)} • ${esc(lab.status||"Requested")}</p></div>`:""}
   </section>`;
+  document.getElementById("showcaseAgain").onclick=loadShowcaseDemo;
+  if(order){
+    const changeStage=value=>{
+      const next={...order,status:value,statusText:"Simulated tracking — no real fulfilment",demo:true};
+      localStorage.setItem("satiMedicsOrder",JSON.stringify(next));
+      try{
+        const history=JSON.parse(localStorage.getItem("satiMedicsOrders")||"[]");
+        if(Array.isArray(history))localStorage.setItem("satiMedicsOrders",JSON.stringify(history.map(x=>x.id===next.id?next:x)));
+      }catch{}
+      renderOrders();
+    };
+    document.getElementById("advanceDemoStage").onclick=()=>changeStage(Math.min(4,(Number(order.status)||0)+1));
+    document.getElementById("resetDemoStage").onclick=()=>changeStage(0);
+    document.getElementById("reorderDemo").onclick=()=>{
+      cart=(Array.isArray(order.items)?order.items:[]).filter(x=>medicines.some(m=>m.id===x.id)).map(x=>({...medicines.find(m=>m.id===x.id),qty:Math.min(20,Math.max(1,Number(x.qty)||1))}));
+      saveCart();nav("cart");toast("Demo items added back to cart");
+    };
+  }
 }
 function renderProfile(){
   const profile=getProfileDefaults();
