@@ -184,9 +184,25 @@ function setBusy(button,busy,label){
 function formatWhen(value){
   try{return new Date(value).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});}catch{return value;}
 }
-function hasPrescriptionAttachment(){
-  // Filename metadata is not an uploaded, pharmacist-readable prescription.
-  return false;
+function hasDemoPrescriptionSelection(){
+  try { const meta=JSON.parse(localStorage.getItem("satiMedicsRxMeta")||"null"); return !!(meta && (meta.name||meta.demo)); }
+  catch {return false;}
+}
+function loadShowcaseDemo(){
+  const now=new Date(), tomorrow=new Date(now.getTime()+86400000);
+  const day=tomorrow.getFullYear()+"-"+String(tomorrow.getMonth()+1).padStart(2,"0")+"-"+String(tomorrow.getDate()).padStart(2,"0");
+  const profile={name:"Demo Customer",mobile:"9000000000",email:"demo@example.com",lang:"English"};
+  const order={id:makeId("DM"),time:now.toISOString(),status:1,statusText:"Demo medicine order",city:"Betul",total:89,
+    items:[{...medicines[0],qty:2},{...medicines[9],qty:1}],customer:{name:profile.name,mobile:profile.mobile,email:profile.email},payment:"cod",rxRequired:false,rxAttached:false,demo:true};
+  const consult={id:makeId("DC"),doctor:doctors[0].name,specialty:doctors[0].specialty,slot:tomorrow.toISOString(),mode:"Video consultation",patient:profile.name,status:"Demo request only",demo:true};
+  const lab={id:makeId("DL"),name:labs[0].name,date:day,slot:"08:00 AM – 10:00 AM",city:"Betul",patient:profile.name,status:"Demo request only",demo:true};
+  localStorage.setItem("satiMedicsProfile",JSON.stringify(profile));
+  localStorage.setItem("satiMedicsOrder",JSON.stringify(order));saveList("satiMedicsOrders",order);
+  localStorage.setItem("satiMedicsConsult",JSON.stringify(consult));saveList("satiMedicsConsultations",consult);
+  localStorage.setItem("satiMedicsLab",JSON.stringify(lab));saveList("satiMedicsLabs",lab);
+  localStorage.setItem("satiMedicsCity","Betul");citySelect.value="Betul";
+  cart=[{...medicines[3],qty:1},{...medicines[9],qty:2}];saveCart();
+  nav("orders");toast("Sample demo loaded — no real requests sent");
 }
 
 function renderHome(){
@@ -451,14 +467,14 @@ function renderCheckout(){
   const profile=getProfileDefaults();
   const rxItems=cart.filter(item=>item.rx);
   const total=cart.reduce((a,b)=>a+b.price*b.qty,0);
-  const rxAttached=hasPrescriptionAttachment();
+  const rxAttached=hasDemoPrescriptionSelection();
   if(!cart.length){nav("cart");return;}
   view.innerHTML=`<section class="page"><button class="outline-btn" onclick="nav('cart')">← Back to cart</button>
     <div class="checkout-layout" style="margin-top:16px">
       <div class="section-block form-card" style="margin:0">
-        <span class="eyebrow">DELIVERY DETAILS</span><h2 style="margin:8px 0 5px">Deliver in ${esc(citySelect.value)}</h2><p style="font-size:10px;color:var(--muted)">Enter complete contact and address details so the order can be reviewed correctly.</p>
-        ${rxItems.length&&!rxAttached?`<div class="form-status error">This cart contains ${rxItems.length} prescription medicine(s). Attach a prescription before placing the order. <button type="button" class="text-btn" data-nav="prescription">Upload prescription →</button></div>`:""}
-        ${rxItems.length&&rxAttached?`<div class="form-status success">Prescription attachment found. Rx items will remain subject to pharmacist review.</div>`:""}
+        <span class="eyebrow">DELIVERY DETAILS</span><h2 style="margin:8px 0 5px">Demo delivery in ${esc(citySelect.value)}</h2><p style="font-size:12px;color:var(--muted)">Use sample details to try the checkout. Nothing is sent to a pharmacy.</p>
+        ${rxItems.length&&!rxAttached?`<div class="info-callout"><b>Rx demo:</b> ${rxItems.length} prescription medicine(s). Select a sample prescription to simulate this order. <button type="button" class="outline-btn" id="useSampleRx">Use sample Rx</button> <button type="button" class="text-btn" data-nav="prescription">Choose file →</button></div>`:""}
+        ${rxItems.length&&rxAttached?`<div class="form-status info">Demo prescription selected — not uploaded or reviewed by a pharmacist.</div>`:""}
         <form class="smart-form" id="checkoutForm" novalidate>
           <div class="form-status" aria-live="polite"></div>
           <div class="field-grid two">
@@ -476,8 +492,8 @@ function renderCheckout(){
             <div class="field"><label for="pay">Payment preference <span>*</span></label><select id="pay"><option value="cod">Cash on delivery</option><option value="upi">UPI on delivery</option><option value="online" disabled>Online payment — available after gateway integration</option></select></div>
           </div>
           <div class="field"><label for="deliveryNote">Delivery instructions</label><textarea id="deliveryNote" rows="3" maxlength="250" placeholder="Gate, floor, call-before-delivery, etc. (optional)"></textarea></div>
-          <label class="consent-row"><input id="orderConsent" type="checkbox"><span>I agree that final stock, price, prescription approval and delivery estimate are confirmed only after live pharmacy review.</span></label>
-          <div class="form-actions"><button class="primary-btn" id="placeOrder" type="submit" disabled ${rxItems.length&&!rxAttached?"disabled":""}>Live ordering unavailable</button><small>Demo only: no payment or real order submission is available.</small></div>
+          <label class="consent-row"><input id="orderConsent" type="checkbox"><span>I understand this simulated order stays in my browser only. No pharmacy, doctor, rider or payment service is contacted.</span></label>
+          <div class="form-actions"><button class="primary-btn" id="placeOrder" type="submit" ${rxItems.length&&!rxAttached?"disabled":""}>Save simulated order</button><button type="button" class="outline-btn" id="fillDemoAddress">Fill sample details</button><small>Client demo: no payment or real pharmacy order.</small></div>
         </form>
       </div>
       <aside class="checkout-summary">
@@ -487,11 +503,20 @@ function renderCheckout(){
         <small>Final bill can change after live stock, tax, substitution, discount and delivery validation.</small>
       </aside>
     </div></section>`;
+  const sampleRx=document.getElementById("useSampleRx");
+  if(sampleRx) sampleRx.onclick=()=>{
+    localStorage.setItem("satiMedicsRxMeta",JSON.stringify({demo:true,name:"Sample Rx (demo)",status:"Simulation only — no upload",date:new Date().toISOString()}));
+    renderCheckout();toast("Sample Rx selected");
+  };
+  document.getElementById("fillDemoAddress").onclick=()=>{
+    const values={custName:"Demo Customer",phone:"9000000000",email:"demo@example.com",pincode:"460001",house:"Demo House 12",area:"Civil Lines, Betul",landmark:"Sample Location"};
+    Object.entries(values).forEach(([id,value])=>document.getElementById(id).value=value);
+    document.getElementById("orderConsent").checked=true;toast("Sample address filled");
+  };
   const form=document.getElementById("checkoutForm");
   form.addEventListener("submit",e=>{
     e.preventDefault(); clearFormErrors(form);
-    formStatus(form,"Live medicine orders are disabled until licensed pharmacy fulfilment and secure prescription review are integrated."); return;
-    if(rxItems.length&&!hasPrescriptionAttachment()){formStatus(form,"Attach a prescription before placing an Rx order.");return;}
+    if(rxItems.length&&!hasDemoPrescriptionSelection()){formStatus(form,"Choose a sample Rx before simulating an Rx order.");return;}
     const name=document.getElementById("custName").value.trim();
     const phone=document.getElementById("phone").value.trim();
     const email=document.getElementById("email").value.trim();
@@ -505,9 +530,9 @@ function renderCheckout(){
     if(house.length<2) return failField("house","Enter house, flat or building details.");
     if(area.length<3) return failField("area","Enter street, colony or area.");
     if(!document.getElementById("orderConsent").checked){formStatus(form,"Please accept the order acknowledgement.");return;}
-    const btn=document.getElementById("placeOrder"); setBusy(btn,true,"Placing order…");
+    const btn=document.getElementById("placeOrder"); setBusy(btn,true,"Saving simulation…");
     const hasRx=rxItems.length>0;
-    const order={id:makeId("SM"),time:new Date().toISOString(),items:cart.map(x=>({...x})),status:0,statusText:"Demo request — not submitted",city:citySelect.value,total,customer:{name,mobile:phone10(phone),email},delivery:{pincode:pin,house,area,landmark:document.getElementById("landmark").value.trim(),type:document.getElementById("addressType").value,note:document.getElementById("deliveryNote").value.trim()},payment:document.getElementById("pay").value,rxRequired:hasRx,rxAttached:hasRx?hasPrescriptionAttachment():false};
+    const order={id:makeId("SM"),time:new Date().toISOString(),items:cart.map(x=>({...x})),status:0,statusText:"Demo request — not submitted",city:citySelect.value,total,customer:{name,mobile:phone10(phone),email},delivery:{pincode:pin,house,area,landmark:document.getElementById("landmark").value.trim(),type:document.getElementById("addressType").value,note:document.getElementById("deliveryNote").value.trim()},payment:document.getElementById("pay").value,rxRequired:hasRx,rxAttached:hasRx?hasDemoPrescriptionSelection():false,demo:true};
     localStorage.setItem("satiMedicsOrder",JSON.stringify(order)); saveList("satiMedicsOrders",order);
     cart=[]; saveCart();
     setTimeout(()=>{setBusy(btn,false);toast("Demo request saved on this device only");nav("orders");},500);
